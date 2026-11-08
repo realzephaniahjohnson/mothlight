@@ -1,0 +1,14 @@
+[theme]
+base = "dark"
+primaryColor = "#9D7BFF"
+backgroundColor = "#07060F"
+secondaryBackgroundColor = "#141029"
+textColor = "#ECE8FF"
+
+[client]
+toolbarMode = "minimal"
+
+[server]
+# Check files for changes by polling, and rerun the app automatically when they change
+fileWatcherType = "poll"
+runOnSave = true
