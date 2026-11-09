@@ -1,7 +1,6 @@
 # Secrets: never commit keys
 .env
 .env.*
-!.env.example
 *.env
 .streamlit/secrets.toml
 secrets.toml

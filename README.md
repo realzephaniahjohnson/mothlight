@@ -23,24 +23,6 @@
 
 KQL and SPL queries are translated into SQL and run against an in-memory SQLite database, so you can see the translated SQL for every search. The console is sandboxed: every query runs on a private read-only copy, only `SELECT` is allowed, and queries are cancelled after 10 seconds.
 
-```kql
-kev
-| where knownRansomwareCampaignUse == "Known"
-| summarize CVEs = count() by vendorProject
-| top 10 by CVEs
-```
-
-```spl
-index=scam_calls robocall=1
-| stats count by subject
-| sort -count
-| head 10
-```
-
-**Supported KQL:** `where`, `project`, `project-away`, `project-rename`, `extend`, `summarize ... by`, `sort/order by`, `top`, `take/limit`, `distinct`, `count`, plus `contains`, `has`, `startswith`, `endswith`, `in`, `between`, `=~`, `ago()`, `bin()`, `countif()`, `dcount()`
-
-**Supported SPL:** `index=`, field filters with wildcards, free-text search, `NOT/OR`, `search`, `where`, `stats ... by`, `table`, `fields`, `rename`, `eval`, `sort`, `head`, `dedup`, `top`, `rare`
-
 ### Detection rules
 
 | Severity | Rule |
@@ -109,18 +91,6 @@ These are **reputation checks**. They show whether a number, address, or domain 
 - Correlating honeypot telemetry with external threat feeds
 - Secure design: sandboxed read-only query engine, API keys kept out of the repo
 
-## Run it locally
-
-```bash
-git clone <this repo>
-cd mothlight
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-streamlit run app.py
-```
-
-Optional: copy `.env.example` to `.env` and add free AbuseIPDB, IPQualityScore, and api.data.gov keys.
-
 ## Honeypot data
 
 Mothlight shows live attacks from our own [Cowrie](https://github.com/cowrie/cowrie) SSH honeypot running on an
@@ -144,9 +114,6 @@ The real SSH port is only reachable over Tailscale, so nothing on the VM accepts
 Everything in the data was typed by attackers, so Mothlight treats it as untrusted: it's size-capped, validated,
 and only shown in escaped tables. CSV exports neutralize spreadsheet formulas.
 
-You can also upload your own honeypot CSV from the sidebar. Any CSV works as long as it has an IP column (for example
-`IpAddress`, `src_ip`, or `ip`). A timestamp column (`TimeGenerated` or `timestamp`) adds the attacks-over-time chart.
-
 ## Project structure
 
 ```
@@ -156,7 +123,7 @@ query_engine.py   # KQL/SPL-to-SQL translator and sandboxed query runner
 checks.py         # Reputation checks for IPs, CVEs, emails, phone numbers, and domains
 globe3d.py        # 3D night-lights threat globe (globe.gl / WebGL)
 honeypot/         # Export job that runs on the honeypot VM
-.streamlit/       # Theme
+.streamlit/       # Theme and server settings
 ```
 
 ## Team
