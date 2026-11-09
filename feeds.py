@@ -1,6 +1,7 @@
 # feeds.py - Downloads and cleans up threat intelligence data.
 # app.py calls these functions; this file has no web page code in it.
 
+import hashlib
 import io
 import json
 import os
@@ -56,6 +57,24 @@ BLOCKLIST_DE_LISTS = {
 HEADERS = {"User-Agent": "Mothlight/1.0 (open-source threat intel SIEM)"}
 HONEYPOT_FILE = Path(__file__).parent / "honeypot.csv"
 TIMEOUT = 30  # seconds to wait for a website before giving up
+
+
+KEY_FORMAT = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
+
+
+def get_key(name):
+    """The visitor's own key (kept only in their browser session), otherwise the site owner's key.
+    Keys are only ever used server-side to call the provider; they are never sent to the page."""
+    try:
+        user_key = st.session_state.get("user_keys", {}).get(name)
+    except Exception:
+        user_key = None
+    return user_key or get_secret(name)
+
+
+def key_id(key):
+    """A one-way fingerprint so cached results are kept separate per key without storing the key itself."""
+    return hashlib.sha256(key.encode()).hexdigest()[:16]
 
 
 def get_secret(name):
@@ -521,12 +540,18 @@ def lookup_internetdb(ip):
         return None
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
 def lookup_abuseipdb(ip):
-    """AbuseIPDB abuse score. Only runs if you've added ABUSEIPDB_API_KEY."""
-    key = get_secret("ABUSEIPDB_API_KEY")
-    if not key:
+    """AbuseIPDB abuse score. Only runs if there's an ABUSEIPDB_API_KEY (the visitor's or the site's)."""
+    key = get_key("ABUSEIPDB_API_KEY")
+    if not key or not KEY_FORMAT.match(key):
         return None
+    return _abuseipdb(ip, key_id(key), key)
+
+
+@st.cache_data(ttl=3600, show_spinner=False, max_entries=2000)
+def _abuseipdb(ip, key_fingerprint, _key):
+    """Cached per IP and per key fingerprint. Arguments starting with _ are never stored in the cache key."""
+    key = _key
     try:
         response = requests.get(
             ABUSEIPDB_URL,

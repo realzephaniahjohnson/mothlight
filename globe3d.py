@@ -12,7 +12,8 @@ COUNTRIES = "https://raw.githubusercontent.com/vasturiano/globe.gl/master/exampl
 IMG = "https://cdn.jsdelivr.net/npm/three-globe/example/img/"
 
 TEMPLATE = """
-<div id="wrap" style="position:relative;width:100%;height:__H__px;border-radius:8px;overflow:hidden;background:#000">
+<meta name="referrer" content="no-referrer">
+<div id="wrap" style="position:relative;width:100%;height:calc(100vh - 4px);border-radius:8px;overflow:hidden;background:#000">
 <style>html,body{margin:0;background:#000}</style>
   <div id="globe"></div>
   <div style="position:absolute;left:12px;bottom:12px;display:flex;gap:6px;font:12px -apple-system,Segoe UI,sans-serif">
@@ -33,7 +34,7 @@ const DATA = __DATA__;
 const el = document.getElementById("globe");
 try {
   const globe = Globe()(el)
-    .width(document.getElementById("wrap").clientWidth || 800).height(__H__)
+    .width(document.getElementById("wrap").clientWidth || 800).height(document.getElementById("wrap").clientHeight || __H__)
     .backgroundImageUrl("__IMG__night-sky.png")       // star field
     .showAtmosphere(true).atmosphereColor("#3D8BFF").atmosphereAltitude(0.13)
     .pointLat("lat").pointLng("lng").pointColor("color").pointAltitude("alt").pointRadius("r")
@@ -170,8 +171,9 @@ try {
   document.getElementById("reset").onclick = () => globe.pointOfView(home, 1200);
   // Hidden tabs start at width 0, so resize the globe whenever its box changes size
   new ResizeObserver(() => {
-    const w = document.getElementById("wrap").clientWidth;
-    if (w > 0) globe.width(w);
+    const box = document.getElementById("wrap");
+    if (box.clientWidth > 0) globe.width(box.clientWidth);
+    if (box.clientHeight > 0) globe.height(box.clientHeight);
   }).observe(document.getElementById("wrap"));
 } catch (e) {
   document.getElementById("err").style.display = "flex";

@@ -1,6 +1,17 @@
-venv/
+# Secrets: never commit keys
 .env
-*.db
+.env.*
+!.env.example
+*.env
 .streamlit/secrets.toml
+secrets.toml
+*.pem
+*.key
+id_*
+
+# Local data
+*.db
+honeypot.csv
+venv/
 __pycache__/
 .DS_Store

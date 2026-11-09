@@ -15,3 +15,7 @@ enableXsrfProtection = true
 # Check files for changes by polling, and rerun the app automatically when they change
 fileWatcherType = "poll"
 runOnSave = true
+
+[browser]
+# Don't send any usage statistics from visitors' browsers
+gatherUsageStats = false

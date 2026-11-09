@@ -14,7 +14,7 @@ import streamlit as st
 from phonenumbers import PhoneNumberType, carrier, geocoder
 from phonenumbers import timezone as phone_timezone
 
-from feeds import TIMEOUT, get_secret
+from feeds import KEY_FORMAT, TIMEOUT, get_key, key_id
 
 DOH_URL = "https://dns.google/resolve"
 RDAP_URL = "https://rdap.org/domain/{domain}"
@@ -133,11 +133,17 @@ def check_phone(text, complaints=None):
     return result(risk, signals, details, raw)
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
 def ipqs_phone(e164):
-    key = get_secret("IPQS_API_KEY")
-    if not key:
+    key = get_key("IPQS_API_KEY")
+    if not key or not KEY_FORMAT.match(key):
         return None
+    return _ipqs_phone(e164, key_id(key), key)
+
+
+# Phone numbers and emails are personal data: cache briefly (10 min) only to avoid repeat API calls
+@st.cache_data(ttl=600, show_spinner=False, max_entries=500)
+def _ipqs_phone(e164, key_fingerprint, _key):
+    key = _key
     try:
         data = requests.get(IPQS_PHONE_URL.format(key=key, phone=e164.lstrip("+")), timeout=TIMEOUT).json()
         return data if data.get("success") else None
@@ -319,11 +325,16 @@ def check_email(email, disposable=None, phishing=None, phishing_domains=None, br
     return result(risk, signals, details, raw)
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
 def ipqs_email(email):
-    key = get_secret("IPQS_API_KEY")
-    if not key:
+    key = get_key("IPQS_API_KEY")
+    if not key or not KEY_FORMAT.match(key):
         return None
+    return _ipqs_email(email, key_id(key), key)
+
+
+@st.cache_data(ttl=600, show_spinner=False, max_entries=500)
+def _ipqs_email(email, key_fingerprint, _key):
+    key = _key
     try:
         url = IPQS_EMAIL_URL.format(key=key, email=requests.utils.quote(email, safe="@"))
         data = requests.get(url, timeout=TIMEOUT).json()

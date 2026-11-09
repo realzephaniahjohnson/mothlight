@@ -11,6 +11,7 @@
 
 import html
 import re
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -22,6 +23,7 @@ from dotenv import load_dotenv
 import checks
 import feeds
 import globe3d
+import legal
 import query_engine as qe
 
 load_dotenv()
@@ -55,16 +57,18 @@ SIGNAL_COLOR = {"danger": "#FF2E63", "warning": "#FF9F43", "ok": "#39FF88", "inf
 NEON_GREEN, NEON_RED, NEON_GRAY = "#39FF88", "#FF2E63", "#66758C"
 
 
-SECRET_NAMES = ("ABUSEIPDB_API_KEY", "IPQS_API_KEY", "DATA_GOV_API_KEY", "RANSOMWARE_LIVE_API_KEY")
+KEY_ENV = {"AbuseIPDB": "ABUSEIPDB_API_KEY", "IPQualityScore": "IPQS_API_KEY", "data.gov": "DATA_GOV_API_KEY",
+           "Ransomware.live": "RANSOMWARE_LIVE_API_KEY"}
+SECRET_NAMES = tuple(KEY_ENV.values())
 
 
 def redact(text):
     """Strip API keys out of error messages before they're shown (request URLs can contain them)."""
     text = str(text)
     for name in SECRET_NAMES:
-        secret = feeds.get_secret(name)
-        if secret:
-            text = text.replace(secret, "[redacted]")
+        for secret in (feeds.get_secret(name), feeds.get_key(name)):
+            if secret:
+                text = text.replace(secret, "[redacted]")
     return re.sub(r"(api_?key|key|token)=[^&\s'\"]+", r"\1=[redacted]", text, flags=re.IGNORECASE)
 
 
@@ -75,6 +79,30 @@ def csv_safe(df):
         if pd.api.types.is_object_dtype(out[col]) or pd.api.types.is_string_dtype(out[col]):
             out[col] = out[col].map(lambda v: "'" + v if isinstance(v, str) and v[:1] in ("=", "+", "-", "@", "\t", "\r") else v)
     return out.to_csv(index=False)
+
+
+@st.cache_resource
+def rate_counters():
+    """Shared across every visitor, so opening new tabs can't get around the site-wide limits."""
+    return {"lock": threading.Lock(), "hits": {}}
+
+
+def allow(action, per_visitor, site_wide, window):
+    """Rate limit: at most `per_visitor` per session and `site_wide` across everyone, per `window` seconds.
+    Only timestamps are kept, never what was searched."""
+    now = time.time()
+    mine = [t for t in st.session_state.setdefault("rate_hits", {}).get(action, []) if now - t < window]
+    if len(mine) >= per_visitor:
+        return False
+    counters = rate_counters()
+    with counters["lock"]:
+        everyone = [t for t in counters["hits"].get(action, []) if now - t < window]
+        if len(everyone) >= site_wide:
+            counters["hits"][action] = everyone
+            return False
+        counters["hits"][action] = everyone + [now]
+    st.session_state.rate_hits[action] = mine + [now]
+    return True
 
 
 def esc(value):
@@ -196,6 +224,29 @@ iframe {{border-radius: 10px; box-shadow: 0 0 30px rgba(56,132,255,0.18);}}
 .verdict.suspicious {{background: rgba(255,159,67,0.12); border-color: #FF9F43; box-shadow: 0 0 22px rgba(255,159,67,0.25);}}
 .verdict.clean {{background: rgba(57,255,136,0.08); border-color: #39FF88; box-shadow: 0 0 22px rgba(57,255,136,0.2);}}
 .verdict b {{text-shadow: 0 0 10px currentColor;}}
+
+/* Phones */
+@media (max-width: 640px) {{
+  .block-container {{padding: 0.9rem 0.75rem 2.5rem;}}
+  h1 {{font-size: 2rem !important;}}
+  h3 {{font-size: 1.15rem !important;}}
+  .statusbar {{gap: 0.35rem 0.9rem; font-size: 0.68rem; padding: 0.45rem 0.7rem; margin-bottom: 0.7rem;}}
+  .sevcards {{grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;}}
+  .sevcard {{padding: 10px 12px; gap: 10px;}}
+  .sevcard-num {{font-size: 1.35rem;}}
+  .st-key-kpis [data-testid="stHorizontalBlock"] {{flex-direction: row !important; flex-wrap: wrap !important;
+    gap: 0.5rem !important;}}
+  .st-key-kpis [data-testid="stColumn"] {{flex: 1 1 calc(50% - 0.5rem) !important; min-width: calc(50% - 0.5rem) !important;
+    width: calc(50% - 0.5rem) !important;}}
+  [data-testid="stMetric"] {{padding: 0.55rem 0.75rem;}}
+  [data-testid="stMetricValue"] {{font-size: 1.35rem;}}
+  [data-testid="stMetricLabel"] p {{font-size: 0.75rem;}}
+  iframe {{height: 430px !important;}}
+  .siem-table-wrap {{overflow-x: auto; -webkit-overflow-scrolling: touch;}}
+  .siem-table {{font-size: 0.72rem;}}
+  .siem-table th, .siem-table td {{padding: 6px 8px;}}
+  .verdict {{font-size: 0.85rem; word-break: break-all;}}
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -249,7 +300,7 @@ def load_connector(key):
         return None, redact(detail)[:160], datetime.now(timezone.utc)
 
 
-@st.cache_resource(ttl=3600, show_spinner="Indexing data for search...")
+@st.cache_resource(ttl=3600, max_entries=3, show_spinner="Indexing data for search...")
 def get_database(version, _tables):
     """Build the searchable database. 'version' changes whenever the data does."""
     conn = qe.build_database(_tables)
@@ -594,14 +645,38 @@ with st.sidebar:
     uploaded = st.file_uploader("Honeypot log (CSV)", type="csv",
                                 help="Any CSV with an IP column. Or save it as honeypot.csv in the project folder.")
     if st.button("Refresh all data", width="stretch"):
-        st.cache_data.clear()
-        st.cache_resource.clear()
-        st.rerun()
-    keys = {"AbuseIPDB": feeds.get_secret("ABUSEIPDB_API_KEY"), "IPQualityScore": feeds.get_secret("IPQS_API_KEY"),
-            "data.gov": feeds.get_secret("DATA_GOV_API_KEY"), "Ransomware.live": feeds.get_secret("RANSOMWARE_LIVE_API_KEY")}
-    st.markdown('<div style="font-size:0.8rem;color:#8FA6C8;line-height:2">Optional API keys<br>' + "<br>".join(
-        status_badge(name, NEON_GREEN if k else NEON_GRAY) for name, k in keys.items()) + "</div>",
-        unsafe_allow_html=True)
+        if allow("refresh", 1, 1, 900):
+            st.cache_data.clear()
+            load_connector.clear()
+            st.rerun()
+        else:
+            st.warning("The data was refreshed in the last 15 minutes. Feeds update automatically.")
+    with st.expander("Use your own API keys"):
+        st.caption("Optional. Adds AbuseIPDB and IPQualityScore checks to Investigate. Your keys stay in this "
+                   "browser session only: they're never saved, logged, or shown, and they're gone when you close the tab. "
+                   "Everything else works without keys.")
+        byo = {"ABUSEIPDB_API_KEY": st.text_input("AbuseIPDB key", type="password", key="byo_abuseipdb",
+                                                  autocomplete="new-password"),
+               "IPQS_API_KEY": st.text_input("IPQualityScore key", type="password", key="byo_ipqs",
+                                             autocomplete="new-password")}
+        bad = [n for n, v in byo.items() if v.strip() and not feeds.KEY_FORMAT.match(v.strip())]
+        if bad:
+            st.error("That doesn't look like an API key (letters and numbers only).")
+        st.session_state.user_keys = {n: v.strip() for n, v in byo.items() if v.strip() and n not in bad}
+    user_keys = st.session_state.get("user_keys", {})
+
+    def key_status(name):
+        if name in user_keys:
+            return NEON_GREEN, "yours"
+        return (NEON_GREEN, "on") if feeds.get_secret(name) else (NEON_GRAY, "off")
+
+    rows = []
+    for label, name in KEY_ENV.items():
+        color, state = key_status(name)
+        rows.append(status_badge(f"{label} · {state}", color))
+    st.markdown('<div style="font-size:0.8rem;color:#8FA6C8;line-height:2">API keys<br>' + "<br>".join(rows) + "</div>",
+                unsafe_allow_html=True)
+    st.caption("No accounts, ads, or trackers. See Privacy & Terms.")
 
 honeypot = None
 try:
@@ -658,7 +733,8 @@ def page_overview():
     recent_breaches = data["data_breaches"]
     if recent_breaches is not None:
         recent_breaches = recent_breaches[recent_breaches["added"] >= pd.Timestamp.now() - pd.Timedelta(days=90)]
-    row1, row2 = st.columns(4), st.columns(4)
+    kpis = st.container(key="kpis")
+    row1, row2 = kpis.columns(4), kpis.columns(4)
     row1[0].metric("Exploited CVEs", count(data["kev"]), border=True)
     row1[1].metric("Malicious IPs", count(threat_ips), border=True,
                    help=f"In any attack, botnet, or scanner feed, or on {min_score}+ blocklists")
@@ -878,6 +954,9 @@ def load_example():
 
 def run_search():
     st.session_state.saved_query = st.session_state.query_text
+    if not allow("search", 20, 400, 60):
+        st.session_state.search_result = {"error": "Too many searches in the last minute. Wait a moment and try again."}
+        return
     try:
         results, sql, ms = qe.run_query(db, st.session_state.lang, st.session_state.query_text)
         st.session_state.search_result = {"df": results, "sql": sql, "ms": ms}
@@ -964,7 +1043,7 @@ def page_investigate():
     st.caption("Check any indicator against every feed: IP address, CVE, email, phone number, or domain.")
     value = st.text_input("Indicator", placeholder="185.220.101.1 · CVE-2024-3400 · billing@paypa1.com · "
                                                   "(844) 502-3148 · paypal-login.net",
-                          label_visibility="collapsed").strip()
+                          label_visibility="collapsed", autocomplete="off", max_chars=254).strip()
     if not value:
         return
     if len(value) > 254:
@@ -972,12 +1051,9 @@ def page_investigate():
         return
     # Throttle lookups so the public site can't be used to hammer the free APIs behind it
     if value != st.session_state.get("last_lookup"):
-        now = time.time()
-        recent = [t for t in st.session_state.get("lookup_times", []) if now - t < 600]
-        if len(recent) >= 30:
+        if not allow("lookup", 30, 300, 600):
             st.warning("Lookup limit reached (30 every 10 minutes). Try again in a few minutes.")
             return
-        st.session_state.lookup_times = recent + [now]
         st.session_state.last_lookup = value
     kind = feeds.detect_type(value)
     labels = {"ip": "IP address", "cve": "CVE", "email": "Email address", "phone": "Phone number", "domain": "Domain"}
@@ -1098,12 +1174,22 @@ def page_connectors():
     for service, use, key_name in services:
         if key_name is None:
             badge = status_badge("No key needed", NEON_GREEN)
-        elif keys[key_name]:
-            badge = status_badge("Key added", NEON_GREEN)
+        elif key_status(KEY_ENV[key_name])[1] != "off":
+            badge = status_badge("Your key" if key_status(KEY_ENV[key_name])[1] == "yours" else "Key added", NEON_GREEN)
         else:
             badge = status_badge("Optional key", NEON_GRAY)
         rows.append([f"<td>{badge}</td>", f"<td>{service}</td>", f'<td class="dim">{use}</td>'])
     html_table(["Status", "Service", "Used for"], rows)
+
+
+# =============================================================================
+# Page: Privacy & Terms
+# =============================================================================
+def page_privacy():
+    st.title("Privacy & Terms")
+    privacy, terms = st.tabs(["Privacy Policy", "Terms of Use"])
+    privacy.markdown(legal.PRIVACY)
+    terms.markdown(legal.TERMS)
 
 
 # =============================================================================
@@ -1116,9 +1202,11 @@ PAGES = {
     "investigate": st.Page(page_investigate, title="Investigate", icon=":material/travel_explore:"),
     "honeypot": st.Page(page_honeypot, title="Honeypot", icon=":material/hive:"),
     "connectors": st.Page(page_connectors, title="Connectors", icon=":material/cable:"),
+    "privacy": st.Page(page_privacy, title="Privacy & Terms", icon=":material/policy:", url_path="privacy"),
 }
 st.navigation({
     "Monitor": [PAGES["overview"], PAGES["alerts"]],
     "Hunt": [PAGES["search"], PAGES["investigate"]],
     "Data": [PAGES["honeypot"], PAGES["connectors"]],
+    "About": [PAGES["privacy"]],
 }).run()

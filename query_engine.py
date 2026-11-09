@@ -61,6 +61,9 @@ def sandbox_copy(master):
     Anything other than reading data (DROP, UPDATE, ATTACH, PRAGMA...) is blocked."""
     conn = sqlite3.connect(":memory:")
     master.backup(conn)
+    conn.execute("PRAGMA trusted_schema = OFF")   # no SQL functions run from stored schema
+    conn.execute("PRAGMA query_only = ON")        # read-only, even before the authorizer below
+    conn.setlimit(sqlite3.SQLITE_LIMIT_ATTACHED, 0)  # no other database files can be opened
     conn.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, MAX_VALUE_BYTES)
     conn.setlimit(sqlite3.SQLITE_LIMIT_SQL_LENGTH, 50_000)
     conn.set_authorizer(lambda action, *args: sqlite3.SQLITE_OK if action in ALLOWED_ACTIONS else sqlite3.SQLITE_DENY)
