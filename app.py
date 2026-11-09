@@ -1190,6 +1190,7 @@ def page_connectors():
 # =============================================================================
 def page_privacy():
     st.title("Privacy & Terms")
+    st.caption(f"Mothlight is built and run by {legal.TEAM}. Effective {legal.EFFECTIVE}.")
     privacy, terms = st.tabs(["Privacy Policy", "Terms of Use"])
     privacy.markdown(legal.PRIVACY)
     terms.markdown(legal.TERMS)

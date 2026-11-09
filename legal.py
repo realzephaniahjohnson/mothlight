@@ -1,6 +1,7 @@
 """Privacy Policy and Terms of Use shown on the Privacy & Terms page."""
 
 EFFECTIVE = "November 9, 2026"
+TEAM = "Zephaniah Johnson, Zakari Gilmer, and Bofelo Gaeonale"
 CONTACT = "[github.com/realzephaniahjohnson](https://github.com/realzephaniahjohnson)"
 
 PRIVACY = f"""
@@ -77,7 +78,7 @@ We may update this policy. The effective date above shows when it last changed. 
 means you accept the updated policy.
 
 #### 11. Contact
-Questions, privacy requests, or security reports: {CONTACT}.
+Mothlight is run by {TEAM}. Questions, privacy requests, or security reports: {CONTACT}.
 """
 
 TERMS = f"""
@@ -147,7 +148,10 @@ the effective date shows the latest version, and continued use means you accept 
 Found a vulnerability in Mothlight itself? Please report it privately through {CONTACT} and give a reasonable time
 to fix it before sharing. Don't access other people's data or disrupt the service while testing.
 
-#### 12. General
+#### 12. Who runs Mothlight
+Mothlight is built and run by {TEAM}. Contact: {CONTACT}.
+
+#### 13. General
 These terms are governed by the laws of the State of New York, USA, without regard to conflict-of-law rules, and
 disputes will be handled in the state or federal courts located in New York, except where your local law gives
 you the right to bring claims elsewhere. If any part of these terms is found unenforceable, the rest stays in
