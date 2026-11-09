@@ -237,9 +237,9 @@ BUTTON_STYLE = ("background:rgba(12,22,42,0.85);color:#E6EDF3;border:1px solid r
 
 
 def severity_color(value, high, medium):
-    """Red for the worst, orange for the middle, yellow for the rest."""
+    """Bright blue for the worst, orange for the middle, yellow for the rest."""
     if value >= high:
-        return "#FF4D6D", "255,77,109"
+        return "#3D8BFF", "61,139,255"
     if value >= medium:
         return "#FF9F43", "255,159,67"
     return "#FFD166", "255,209,102"
@@ -272,7 +272,7 @@ def render(points, rings=None, arcs=None, center=(25, -40), legend="", height=56
 # -----------------------------------------------------------------------------
 # Ready-made globes for each map
 # -----------------------------------------------------------------------------
-LEGEND_SEVERITY = ('<span style="color:#FF2E63">●</span> Critical &nbsp; <span style="color:#FF7A2E">●</span> High'
+LEGEND_SEVERITY = ('<span style="color:#2F7BFF">●</span> Critical &nbsp; <span style="color:#FF7A2E">●</span> High'
                    ' &nbsp; <span style="color:#FFB020">●</span> Medium &nbsp; <span style="color:#FFE66D">●</span> Low')
 
 
@@ -337,7 +337,7 @@ def show_scam_call_globe(state_counts):
         color, _ = severity_color(n / top, 0.6, 0.25)
         points.append({"lat": lat, "lng": lng, "color": color, "r": 0.7, "alt": 0.01 + 0.15 * n / top,
                        "label": label(state, f"{n:,} scam call reports")})
-    rings = [{"lat": STATE_CENTERS[s][0], "lng": STATE_CENTERS[s][1], "rgb": "255,77,109", "max": 5}
+    rings = [{"lat": STATE_CENTERS[s][0], "lng": STATE_CENTERS[s][1], "rgb": "46,230,197", "max": 5}
              for s in state_counts.nlargest(5).index if s in STATE_CENTERS]
     render(points, rings, center=(38, -96),
            legend="Bar height = scam call reports per state")
@@ -347,13 +347,13 @@ def show_scam_call_globe(state_counts):
 # The combined threat globe (Overview page)
 # -----------------------------------------------------------------------------
 LAYER_COLORS = {
-    "Botnet C2": "#FF2E63", "Brute force": "#FF9F43", "Web attacks": "#FFD166", "Spam & mail": "#38BDF8",
+    "Botnet C2": "#2F7BFF", "Brute force": "#FF9F43", "Web attacks": "#FFD166", "Spam & mail": "#38BDF8",
     "Scanner": "#A3E635", "Tor exit": "#4DA3FF", "Blocklisted": "#A9D1FF", "Scam calls (US)": "#2EE6C5",
-    "Alerts": "#FFFFFF", "Honeypot attacks": "#22D3EE", "Ransomware victims": "#2F6BFF",
+    "Alerts": "#FFFFFF", "Honeypot attacks": "#22D3EE", "Ransomware victims": "#7FB2FF",
 }
 APP_URL = "https://mothlight.streamlit.app"  # fallback if the page can't see its own address
 IP_GROUPS = ["Botnet C2", "Brute force", "Web attacks", "Spam & mail", "Scanner", "Blocklisted"]
-SEVERITY_RGB = {"Critical": "255,46,99", "High": "255,122,46", "Medium": "255,176,32", "Low": "255,230,109"}
+SEVERITY_RGB = {"Critical": "47,123,255", "High": "255,122,46", "Medium": "255,176,32", "Low": "255,230,109"}
 SEVERITY_SIZE = {"Critical": 7, "High": 5.5, "Medium": 4, "Low": 3}
 
 

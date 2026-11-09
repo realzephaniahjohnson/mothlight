@@ -47,14 +47,14 @@ MOTH_LOGO = (
     '</svg>'
 )
 
-RED, ORANGE, YELLOW, GREEN = "#FF4D6D", "#FF9F43", "#FFD166", "#3FB950"
+RED, ORANGE, YELLOW, GREEN = "#3D8BFF", "#FF9F43", "#FFD166", "#3FB950"
 HONEYPOT_LOCATION = (45.50, -73.57)  # Our Cowrie honeypot: Oracle Cloud, Montreal (ca-montreal-1)
 SEVERITY_ORDER = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
 # Neon colors: (glow, text) for each severity, and glow colors for signals and statuses
-SEVERITY_STYLE = {"Critical": ("#FF2E63", "#FF9DB3"), "High": ("#FF7A2E", "#FFC1A0"),
+SEVERITY_STYLE = {"Critical": ("#2F7BFF", "#A8CBFF"), "High": ("#FF7A2E", "#FFC1A0"),
                   "Medium": ("#FFB020", "#FFDD99"), "Low": ("#FFE66D", "#FFF3B0")}
-SIGNAL_COLOR = {"danger": "#FF2E63", "warning": "#FF9F43", "ok": "#39FF88", "info": "#4DD7FF"}
-NEON_GREEN, NEON_RED, NEON_GRAY = "#39FF88", "#FF2E63", "#66758C"
+SIGNAL_COLOR = {"danger": "#2F7BFF", "warning": "#FF9F43", "ok": "#39FF88", "info": "#4DD7FF"}
+NEON_GREEN, NEON_ALERT, NEON_GRAY = "#39FF88", "#2F7BFF", "#66758C"
 
 
 KEY_ENV = {"AbuseIPDB": "ABUSEIPDB_API_KEY", "IPQualityScore": "IPQS_API_KEY", "data.gov": "DATA_GOV_API_KEY",
@@ -172,7 +172,7 @@ iframe {{border-radius: 10px; box-shadow: 0 0 30px rgba(56,132,255,0.18);}}
 .statusbar {{display: flex; flex-wrap: wrap; gap: 1.4rem; align-items: center; font-family: "SF Mono", Menlo, monospace;
   font-size: 0.78rem; padding: 0.5rem 0.9rem; border: 1px solid rgba(77,159,255,0.25); border-radius: 8px;
   margin-bottom: 1rem; background: rgba(12,22,42,0.6);}}
-.statusbar .ok {{color: #3FB950;}} .statusbar .bad {{color: #FF4D6D;}} .statusbar .warn {{color: #FFB347;}}
+.statusbar .ok {{color: #3FB950;}} .statusbar .bad {{color: #5AA2FF;}} .statusbar .warn {{color: #FFB347;}}
 .statusbar .dim {{color: #8FA6C8;}}
 
 /* Neon indicators */
@@ -220,7 +220,7 @@ iframe {{border-radius: 10px; box-shadow: 0 0 30px rgba(56,132,255,0.18);}}
 
 /* Investigate verdict banner */
 .verdict {{padding: 0.9rem 1.1rem; border-radius: 8px; font-size: 1.05rem; margin-bottom: 0.8rem; border: 1px solid;}}
-.verdict.malicious {{background: rgba(255,46,99,0.12); border-color: #FF2E63; box-shadow: 0 0 22px rgba(255,46,99,0.28);}}
+.verdict.malicious {{background: rgba(47,123,255,0.14); border-color: #2F7BFF; box-shadow: 0 0 22px rgba(47,123,255,0.32);}}
 .verdict.suspicious {{background: rgba(255,159,67,0.12); border-color: #FF9F43; box-shadow: 0 0 22px rgba(255,159,67,0.25);}}
 .verdict.clean {{background: rgba(57,255,136,0.08); border-color: #39FF88; box-shadow: 0 0 22px rgba(57,255,136,0.2);}}
 .verdict b {{text-shadow: 0 0 10px currentColor;}}
@@ -801,7 +801,7 @@ def page_overview():
     st.caption(f"Countries glow by how many malicious IPs they host ({len(threat_ips):,} IPs across {countries} countries). "
                f"Spikes are {shown:,} sample IPs spread across those countries, plus ransomware victims, scam calls "
                "by state, and alerts as pulsing rings. "
-               "Malicious IP dots are colored by type: red botnet C2, orange brute force, yellow web attacks, "
+               "Malicious IP dots are colored by type: bright blue botnet C2, orange brute force, yellow web attacks, "
                "sky blue spam, green scanners, pale blue blocklisted. Tap a layer to show or hide it. "
                "Drag to spin, use ＋/－ to zoom, hover for details.")
 
@@ -1153,7 +1153,7 @@ def page_honeypot():
     if honeypot_source == "live":
         latest = honeypot["time"].max()
         ago = f"last attack {minutes_ago(latest)}" if pd.notna(latest) else "no attacks yet"
-        st.markdown(f'{status_badge("LIVE", NEON_RED, pulse=True)} <span style="color:#8FA6C8;font-size:0.85rem">'
+        st.markdown(f'{status_badge("LIVE", NEON_ALERT, pulse=True)} <span style="color:#8FA6C8;font-size:0.85rem">'
                     f'Real SSH attacks on our Cowrie honeypot (Oracle Cloud, Montreal) · last 7 days · {ago} · '
                     f'updates every 5 minutes · <a href="{feeds.HONEYPOT_REPO}" target="_blank">raw data</a></span>',
                     unsafe_allow_html=True)
@@ -1219,17 +1219,17 @@ def page_connectors():
     rows = []
     for key, name, kind, _, refresh, url in CONNECTORS:
         error, loaded_at = status[key]
-        badge = status_badge("Connected", NEON_GREEN) if error is None else status_badge("Error", NEON_RED, pulse=True)
+        badge = status_badge("Connected", NEON_GREEN) if error is None else status_badge("Error", NEON_ALERT, pulse=True)
         records = f"{len(data[key]):,}" if data[key] is not None else "0"
-        note = f'<br><span style="color:#FF9DB3;font-size:0.75rem">{esc(error)}</span>' if error else ""
+        note = f'<br><span style="color:#A8CBFF;font-size:0.75rem">{esc(error)}</span>' if error else ""
         rows.append([f"<td>{badge}{note}</td>", f"<td>{esc(name)}</td>", f'<td class="dim">{esc(kind)}</td>',
                      f'<td class="mono">{key}</td>', f'<td class="mono">{records}</td>', f'<td class="dim">{refresh}</td>',
                      f'<td class="dim">{loaded_at:%Y-%m-%d %H:%M}</td>',
                      f'<td class="clip"><a href="{esc(url)}" target="_blank">{esc(url)}</a></td>'])
     loaded = honeypot is not None
     if honeypot_error:
-        badge = status_badge("Error", NEON_RED, pulse=True) + \
-            f'<br><span style="color:#FF9DB3;font-size:0.75rem">{esc(honeypot_error)}</span>'
+        badge = status_badge("Error", NEON_ALERT, pulse=True) + \
+            f'<br><span style="color:#A8CBFF;font-size:0.75rem">{esc(honeypot_error)}</span>'
     elif honeypot_source == "live":
         badge = status_badge("Live", NEON_GREEN, pulse=True)  # which backup served it stays private
     else:

@@ -88,8 +88,8 @@ flowchart LR
 
 | Severity | Rule |
 |---|---|
-| 🔴 **Critical** | Ransomware-linked CVE added to CISA KEV in the last 7 days |
-| 🔴 **Critical** | Botnet command-and-control server attacked the honeypot |
+| 🔵 **Critical** | Ransomware-linked CVE added to CISA KEV in the last 7 days |
+| 🔵 **Critical** | Botnet command-and-control server attacked the honeypot |
 | 🟠 **High** | Ransomware-linked CVE added in the last 30 days |
 | 🟠 **High** | Exploited CVE in a widely used product (Fortinet, Ivanti, Cisco, Microsoft...) in the last 14 days |
 | 🟠 **High** | Botnet C2 server is online |
