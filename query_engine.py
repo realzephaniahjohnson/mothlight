@@ -691,6 +691,8 @@ EXAMPLES = {
         "Microsoft CVEs mentioning remote code": 'kev\n| where vendorProject == "Microsoft" and vulnerabilityName contains "remote code"\n| project cveID, product, dateAdded',
         "Honeypot: top attackers": "honeypot\n| summarize Attempts = count() by ip\n| top 10 by Attempts",
         "Honeypot: attempts per hour": "honeypot\n| summarize Attempts = count() by bin(time, 1h)\n| sort by time asc",
+        "Honeypot: passwords attackers tried": 'honeypot\n| where event == "login_failed"\n| summarize Tries = count() by password\n| top 15 by Tries',
+        "Honeypot: commands run in the fake shell": 'honeypot\n| where event == "command"\n| summarize Times = count() by command\n| top 15 by Times',
     },
     "SPL": {
         "Ransomware CVEs by vendor": 'index=kev knownRansomwareCampaignUse="Known"\n| stats count by vendorProject\n| sort -count\n| head 10',

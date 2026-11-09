@@ -18,6 +18,11 @@ The short version: **we don't have accounts, ads, analytics, or trackers, and we
   and what you type is not logged or saved.
 - **Rate-limit counters.** To stop abuse, we keep the *times* of recent searches and lookups (not their contents)
   in memory for up to 15 minutes.
+- **Attack data from our honeypot, not from visitors.** Our honeypot is a fake SSH server that exists only to be
+  attacked. It records the IP address, login attempts, and commands of systems that connect to it and try to break
+  in, and we publish the last 7 days of that data for security research and network defense (a legitimate interest
+  recognized in GDPR Recital 49). It never includes people who visit this website. If you believe an entry is about
+  you and was recorded in error, contact us and we'll remove it.
 
 #### 2. What you submit
 - **Searches and indicators** (IP addresses, domains, emails, phone numbers, CVE IDs) are processed only to show you

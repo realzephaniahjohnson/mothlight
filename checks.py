@@ -404,10 +404,10 @@ def check_ip(ip, ipsum=None, feodo=None, honeypot=None, intel=None, drop=None, s
 
     if honeypot is not None and not honeypot.empty:
         hits = int((honeypot["ip"] == ip).sum())
-        details["Hit my honeypot"] = f"{hits:,} times"
+        details["Hit our honeypot"] = f"{hits:,} times"
         if hits:
             risk += 30
-            signals.append(("danger", f"Attacked my honeypot {hits:,} time(s)."))
+            signals.append(("danger", f"Attacked our honeypot {hits:,} time(s)."))
 
     abuse = lookup_abuseipdb(ip)
     if abuse:

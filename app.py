@@ -48,7 +48,7 @@ MOTH_LOGO = (
 )
 
 RED, ORANGE, YELLOW, GREEN = "#FF4D6D", "#FF9F43", "#FFD166", "#3FB950"
-HONEYPOT_LOCATION = (36.67, -78.39)  # Azure East US (Virginia). Change this to your honeypot's Azure region.
+HONEYPOT_LOCATION = (45.50, -73.57)  # Our Cowrie honeypot: Oracle Cloud, Montreal (ca-montreal-1)
 SEVERITY_ORDER = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
 # Neon colors: (glow, text) for each severity, and glow colors for signals and statuses
 SEVERITY_STYLE = {"Critical": ("#FF2E63", "#FF9DB3"), "High": ("#FF7A2E", "#FFC1A0"),
@@ -307,6 +307,16 @@ def get_database(version, _tables):
     """Build the searchable database. 'version' changes whenever the data does."""
     conn = qe.build_database(_tables)
     return conn, qe.get_schema(conn)
+
+
+def minutes_ago(when):
+    """'5 min ago', '3 h ago', or '2 days ago' for a UTC timestamp."""
+    minutes = max(0, int((pd.Timestamp.now(tz="UTC") - when).total_seconds() // 60))
+    if minutes < 60:
+        return f"{minutes} min ago"
+    if minutes < 48 * 60:
+        return f"{minutes // 60} h ago"
+    return f"{minutes // 1440} days ago"
 
 
 def naive(series):
@@ -681,11 +691,25 @@ with st.sidebar:
     st.caption("No accounts, ads, or trackers. See Privacy & Terms.")
     st.caption("Built by Zephaniah Johnson, Zakari Gilmer, and Bofelo Gaeonale.")
 
-honeypot = None
-try:
-    honeypot = feeds.load_honeypot(uploaded)
-except Exception as error:
-    st.sidebar.error(f"Couldn't read the honeypot file: {error}")
+# Honeypot: an uploaded CSV wins, then the live Cowrie feed, then a local honeypot.csv
+honeypot, honeypot_source, honeypot_error = None, None, None
+if uploaded is not None:
+    try:
+        honeypot, honeypot_source = feeds.load_honeypot(uploaded), "upload"
+    except Exception as error:
+        st.sidebar.error(f"Couldn't read the honeypot file: {redact(error)[:160]}")
+if honeypot is None:
+    try:
+        honeypot = feeds.get_live_honeypot()
+        honeypot_source = "live" if honeypot is not None else None
+    except Exception as error:
+        honeypot_error = redact(error)[:160]
+if honeypot is None:
+    try:
+        honeypot = feeds.load_honeypot()
+        honeypot_source = "file" if honeypot is not None else None
+    except Exception as error:
+        st.sidebar.error(f"Couldn't read honeypot.csv: {redact(error)[:160]}")
 
 # Add EPSS (exploit likelihood) to every exploited CVE
 if data["kev"] is not None and data["epss"] is not None:
@@ -1112,14 +1136,23 @@ def page_investigate():
 # =============================================================================
 def page_honeypot():
     st.title("Honeypot")
+    if honeypot_source == "live":
+        latest = honeypot["time"].max()
+        ago = f"last attack {minutes_ago(latest)}" if pd.notna(latest) else "no attacks yet"
+        st.markdown(f'{status_badge("LIVE", NEON_RED, pulse=True)} <span style="color:#8FA6C8;font-size:0.85rem">'
+                    f'Real SSH attacks on our Cowrie honeypot (Oracle Cloud, Montreal) · last 7 days · {ago} · '
+                    f'updates every 5 minutes · <a href="{feeds.HONEYPOT_REPO}" target="_blank">raw data</a></span>',
+                    unsafe_allow_html=True)
+    elif honeypot_source == "upload":
+        st.caption("Showing the file you uploaded. Remove it in the sidebar to go back to the live honeypot.")
     if honeypot is None or honeypot.empty:
-        st.info("No honeypot data yet. Upload a CSV in the sidebar, or save it as honeypot.csv in the project folder. "
-                "Any export with an IP column works, like failed sign-ins from Sentinel or Log Analytics.")
+        st.info("No honeypot data yet. The live honeypot feed hasn't published anything, or you can upload a CSV in "
+                "the sidebar. Any export with an IP column works, like failed sign-ins from Sentinel or Log Analytics.")
         return
     counts = honeypot["ip"].value_counts().rename_axis("ip").reset_index(name="attempts")
     on_lists = f"{counts['ip'].isin(ipsum['ip']).mean():.0%}" if ipsum is not None else "—"
     c = st.columns(4)
-    c[0].metric("Total attempts", f"{len(honeypot):,}", border=True)
+    c[0].metric("Attack events" if "event" in honeypot else "Total attempts", f"{len(honeypot):,}", border=True)
     c[1].metric("Unique attacker IPs", f"{len(counts):,}", border=True)
     c[2].metric("Already on blocklists", on_lists, border=True,
                 help="Share of attacker IPs that other defenders had already flagged")
@@ -1142,6 +1175,27 @@ def page_honeypot():
     st.dataframe(table, hide_index=True, column_config={
         "ip": "Attacker IP", "attempts": "Attempts", "score": "Blocklist score", "botnet_c2": "Botnet C2"})
 
+    if "event" in honeypot:
+        # Everything below was typed by attackers: only ever shown in escaped tables
+        logins = honeypot[honeypot["event"].str.startswith("login")]
+        commands = honeypot[honeypot["event"] == "command"]
+
+        def top(series, label):
+            series = series[series.str.len() > 0]
+            return series.value_counts().head(15).rename_axis(label).reset_index(name="Tries")
+
+        st.subheader("What attackers tried")
+        cols = st.columns(3)
+        cols[0].caption("Usernames")
+        cols[0].dataframe(top(logins["username"], "Username"), hide_index=True)
+        cols[1].caption("Passwords")
+        cols[1].dataframe(top(logins["password"], "Password"), hide_index=True)
+        cols[2].caption("Commands after getting a (fake) shell")
+        cols[2].dataframe(top(commands["command"], "Command"), hide_index=True)
+        st.caption(f"{len(logins):,} login attempts · {int((honeypot['event'] == 'login_success').sum()):,} let into "
+                   f"the fake shell · {len(commands):,} commands run · "
+                   f"{int((honeypot['event'] == 'download').sum()):,} malware download attempts")
+
 
 # =============================================================================
 # Page: Connectors
@@ -1159,10 +1213,21 @@ def page_connectors():
                      f'<td class="dim">{loaded_at:%Y-%m-%d %H:%M}</td>',
                      f'<td class="clip"><a href="{esc(url)}" target="_blank">{esc(url)}</a></td>'])
     loaded = honeypot is not None
-    rows.append([f'<td>{status_badge("Loaded" if loaded else "No file", NEON_GREEN if loaded else NEON_GRAY)}</td>',
-                 "<td>Our honeypot</td>", '<td class="dim">Attack logs</td>', '<td class="mono">honeypot</td>',
-                 f'<td class="mono">{len(honeypot) if loaded else 0:,}</td>', '<td class="dim">Manual</td>',
-                 '<td class="dim">—</td>', '<td class="dim">honeypot.csv</td>'])
+    if honeypot_error:
+        badge = status_badge("Error", NEON_RED, pulse=True) + \
+            f'<br><span style="color:#FF9DB3;font-size:0.75rem">{esc(honeypot_error)}</span>'
+    elif honeypot_source == "live":
+        badge = status_badge("Live", NEON_GREEN, pulse=True)
+    else:
+        badge = status_badge("Loaded" if loaded else "Waiting", NEON_GREEN if loaded else NEON_GRAY)
+    latest = honeypot["time"].max() if loaded and "time" in honeypot else None
+    rows.append([f"<td>{badge}</td>", "<td>Our honeypot (Cowrie, Oracle Cloud)</td>",
+                 '<td class="dim">Live SSH attacks</td>', '<td class="mono">honeypot</td>',
+                 f'<td class="mono">{len(honeypot) if loaded else 0:,}</td>',
+                 f'<td class="dim">{"Upload" if honeypot_source == "upload" else "5 minutes"}</td>',
+                 f'<td class="dim">{latest:%Y-%m-%d %H:%M}</td>' if latest is not None and pd.notna(latest)
+                 else '<td class="dim">—</td>',
+                 f'<td class="clip"><a href="{feeds.HONEYPOT_REPO}" target="_blank">{feeds.HONEYPOT_REPO}</a></td>'])
     html_table(["Status", "Connector", "Data", "Table", "Records", "Refresh", "Last pulled (UTC)", "Source"], rows)
 
     st.subheader("On-demand enrichment")

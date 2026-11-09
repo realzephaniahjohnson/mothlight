@@ -16,7 +16,7 @@
 | **Alerts** | Detections from 24 rules across 4 severities (Critical, High, Medium, Low), filterable by severity and source |
 | **Search** | Query console for KQL (Microsoft Sentinel), SPL (Splunk), or SQL, with an event timeline, schema browser, example queries, and CSV export |
 | **Investigate** | One box for any indicator. Auto-detects IPs, CVEs, emails, phone numbers, and domains, then returns a verdict, risk score, and evidence |
-| **Honeypot** | Attacks against our honeypot, enriched with geolocation and blocklist data |
+| **Honeypot** | Live SSH attacks on our Cowrie honeypot, updated every 5 minutes: attackers on a map, attacks per hour, and the usernames, passwords, and commands they tried |
 | **Connectors** | Health, record counts, and refresh status for every data source |
 
 ### Query engine
@@ -94,7 +94,7 @@ These are **reputation checks**. They show whether a number, address, or domain 
 | [OpenPhish Community](https://github.com/openphish/public_feed) | `phishing_urls` | Live phishing URLs (non-commercial use) | No |
 | [FTC Do Not Call data](https://www.ftc.gov/policy-notices/open-government/data-sets/do-not-call-data) | `scam_calls` | Phone numbers reported for unwanted calls (daily CSVs, or the official FTC API as a fallback) | Optional (api.data.gov) |
 | [disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains) | `disposable_domains` | Throwaway email providers | No |
-| Our honeypot | `honeypot` | Real attack attempts | No |
+| [Our Cowrie honeypot](https://github.com/realzephaniahjohnson/mothlight-honeypot-data) | `honeypot` | Live SSH attacks: login attempts, commands, and malware downloads (updated every 5 minutes) | No |
 | ip-api.com, Shodan InternetDB, Google DNS, RDAP | — | Enrichment in Investigate | No |
 | [AbuseIPDB](https://www.abuseipdb.com/), [IPQualityScore](https://www.ipqualityscore.com/) | — | Extra scores in Investigate | Optional, free |
 
@@ -105,6 +105,7 @@ These are **reputation checks**. They show whether a number, address, or domain 
 - Threat hunting with KQL and SPL, and translating both into SQL
 - IOC enrichment for IPs, domains, emails, and phone numbers
 - Phishing analysis: lookalike domains, domain age, email authentication (SPF/DMARC)
+- Running a live SSH honeypot (Cowrie on Oracle Cloud) and shipping its logs into the SIEM through a least-privilege pipeline
 - Correlating honeypot telemetry with external threat feeds
 - Secure design: sandboxed read-only query engine, API keys kept out of the repo
 
@@ -122,7 +123,29 @@ Optional: copy `.env.example` to `.env` and add free AbuseIPDB, IPQualityScore, 
 
 ## Honeypot data
 
-Save honeypot logs as `honeypot.csv` in the project folder, or upload one from the sidebar. Any CSV works as long as it has an IP column (for example `IpAddress`, `src_ip`, or `ip`). A timestamp column (`TimeGenerated` or `timestamp`) adds the attacks-over-time chart.
+Mothlight shows live attacks from our own [Cowrie](https://github.com/cowrie/cowrie) SSH honeypot running on an
+Oracle Cloud VM in Montreal. The pipeline:
+
+```
+attackers ──► Cowrie (fake SSH on port 22) ──► cowrie.json
+                                                  │  every 5 min (cron, unprivileged user)
+                                                  ▼
+                       honeypot/export_cowrie.py: keep login attempts, commands, downloads;
+                       drop private IPs and our own addresses; cap field length and row count
+                                                  │  deploy key that can only write to one repo
+                                                  ▼
+                       github.com/realzephaniahjohnson/mothlight-honeypot-data (honeypot.csv)
+                                                  │  Mothlight re-reads it every 5 minutes
+                                                  ▼
+                       Honeypot page, globe arcs, honeypot alert rules, `honeypot` search table
+```
+
+The real SSH port is only reachable over Tailscale, so nothing on the VM accepts admin logins from the internet.
+Everything in the data was typed by attackers, so Mothlight treats it as untrusted: it's size-capped, validated,
+and only shown in escaped tables. CSV exports neutralize spreadsheet formulas.
+
+You can also upload your own honeypot CSV from the sidebar. Any CSV works as long as it has an IP column (for example
+`IpAddress`, `src_ip`, or `ip`). A timestamp column (`TimeGenerated` or `timestamp`) adds the attacks-over-time chart.
 
 ## Project structure
 
@@ -132,6 +155,7 @@ feeds.py          # Downloads, caches, and cleans each data feed
 query_engine.py   # KQL/SPL-to-SQL translator and sandboxed query runner
 checks.py         # Reputation checks for IPs, CVEs, emails, phone numbers, and domains
 globe3d.py        # 3D night-lights threat globe (globe.gl / WebGL)
+honeypot/         # Export job that runs on the honeypot VM
 .streamlit/       # Theme
 ```
 

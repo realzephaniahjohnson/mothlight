@@ -56,6 +56,10 @@ BLOCKLIST_DE_LISTS = {
 # Identify this app honestly to the sites it pulls from
 HEADERS = {"User-Agent": "Mothlight/1.0 (open-source threat intel SIEM)"}
 HONEYPOT_FILE = Path(__file__).parent / "honeypot.csv"
+HONEYPOT_REPO = "https://github.com/realzephaniahjohnson/mothlight-honeypot-data"
+HONEYPOT_LIVE_URL = "https://raw.githubusercontent.com/realzephaniahjohnson/mothlight-honeypot-data/main/honeypot.csv"
+HONEYPOT_MAX_BYTES = 20_000_000
+HONEYPOT_EVENTS = {"login_failed", "login_success", "command", "download"}
 TIMEOUT = 30  # seconds to wait for a website before giving up
 
 
@@ -571,6 +575,33 @@ def _abuseipdb(ip, key_fingerprint, _key):
 IP_COLUMN_NAMES = ["ip", "ipaddress", "ip_address", "src_ip", "sourceip", "source_ip",
                    "sourcehost", "clientip", "remoteip", "attacker_ip", "srcip"]
 TIME_COLUMN_NAMES = ["timestamp", "timegenerated", "time", "date", "datetime", "eventtime"]
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_live_honeypot():
+    """Live attacks on our Cowrie honeypot. The VM publishes a fresh CSV every 5 minutes.
+
+    Everything in it was typed by attackers, so it's treated as untrusted text: size-capped,
+    validated, and only ever shown through escaped tables.
+    """
+    response = requests.get(HONEYPOT_LIVE_URL, headers=HEADERS, timeout=TIMEOUT, stream=True)
+    if response.status_code == 404:
+        return None  # nothing published yet
+    response.raise_for_status()
+    content = response.raw.read(HONEYPOT_MAX_BYTES + 1, decode_content=True)
+    if len(content) > HONEYPOT_MAX_BYTES:
+        raise ValueError("The honeypot file is too large.")
+    df = pd.read_csv(io.BytesIO(content), dtype=str, keep_default_na=False)
+    missing = {"timestamp", "src_ip", "event"} - set(df.columns)
+    if missing:
+        raise ValueError(f"The honeypot file is missing columns: {', '.join(sorted(missing))}")
+    out = pd.DataFrame({"ip": df["src_ip"].str.strip(),
+                        "time": pd.to_datetime(df["timestamp"], errors="coerce", utc=True),
+                        "event": df["event"].str.strip()})
+    for column in ("username", "password", "command"):
+        out[column] = df[column].str.slice(0, 200) if column in df else ""
+    out = out[out["event"].isin(HONEYPOT_EVENTS) & out["ip"].apply(lambda x: detect_type(x) == "ip")]
+    return out.reset_index(drop=True)
 
 
 def load_honeypot(file=None):
