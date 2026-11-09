@@ -242,6 +242,8 @@ iframe {{border-radius: 10px; box-shadow: 0 0 30px rgba(56,132,255,0.18);}}
   [data-testid="stMetricValue"] {{font-size: 1.35rem;}}
   [data-testid="stMetricLabel"] p {{font-size: 0.75rem;}}
   iframe {{height: 430px !important;}}
+  [data-testid="stElementContainer"]:has(> iframe), [data-testid="stElementContainer"]:has(iframe),
+  .stElementContainer:has(iframe) {{height: auto !important; min-height: 0 !important;}}
   .siem-table-wrap {{overflow-x: auto; -webkit-overflow-scrolling: touch;}}
   .siem-table {{font-size: 0.72rem;}}
   .siem-table th, .siem-table td {{padding: 6px 8px;}}

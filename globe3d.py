@@ -56,11 +56,17 @@ try {
          .arcsData(on.flatMap(l => l.arcs || []));
   };
   if (layers.length > 1) {
-    panel.innerHTML = '<div style="font-weight:600;margin-bottom:2px">Layers</div>' + layers.map((l, i) =>
+    panel.innerHTML = '<div id="lhead" style="font-weight:600;margin-bottom:2px;cursor:pointer;user-select:none">Layers <span id="larrow">▾</span></div>'
+      + '<div id="lbody">' + layers.map((l, i) =>
       `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap">
          <input type="checkbox" data-i="${i}" ${l.on ? "checked" : ""} style="accent-color:${l.color};margin:0">
          <span style="color:${l.color}">●</span> ${l.name}
-         <span style="color:#8FA6C8;margin-left:auto;padding-left:8px">${l.count}</span></label>`).join("");
+         <span style="color:#8FA6C8;margin-left:auto;padding-left:8px">${l.count}</span></label>`).join("") + '</div>';
+    // Tap "Layers" to fold the list away. It starts folded on phones so it doesn't cover the globe.
+    const body = document.getElementById("lbody"), arrow = document.getElementById("larrow");
+    const fold = closed => { body.style.display = closed ? "none" : "block"; arrow.textContent = closed ? "▸" : "▾"; };
+    fold(window.innerWidth < 520);
+    document.getElementById("lhead").onclick = () => fold(body.style.display !== "none");
     panel.querySelectorAll("input").forEach(box => box.onchange = () => {
       layers[box.dataset.i].on = box.checked;
       refresh();
