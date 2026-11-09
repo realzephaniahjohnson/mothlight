@@ -1,8 +1,10 @@
-# OSINT Threat Intelligence SIEM
+# Mothlight
 
-A SIEM-style threat intelligence console built with Python and Streamlit. It pulls free open-source intelligence (OSINT) feeds into one place, raises alerts from detection rules, and lets you hunt through everything with **KQL, SPL, or SQL**. You can also investigate any IP, CVE, email address, phone number, or domain.
+*They always come to the light.*
 
-**Live demo:** _add your Streamlit link here_
+**Mothlight** is an OSINT threat intelligence SIEM with a live SSH honeypot, built with Python and Streamlit. It pulls free open-source intelligence (OSINT) feeds into one place, raises alerts from detection rules, and lets you hunt through everything with **KQL, SPL, or SQL**. You can also investigate any IP, CVE, email address, phone number, or domain.
+
+**Live demo:** https://mothlight.streamlit.app
 
 ![Dashboard screenshot](screenshot.png)
 
@@ -110,7 +112,7 @@ These are **reputation checks**. They show whether a number, address, or domain 
 
 ```bash
 git clone <this repo>
-cd osint-dashboard
+cd mothlight
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 streamlit run app.py

@@ -53,7 +53,7 @@ BLOCKLIST_DE_LISTS = {
 }
 
 # Identify this app honestly to the sites it pulls from
-HEADERS = {"User-Agent": "OSINT-SIEM/1.0 (open-source threat intel dashboard)"}
+HEADERS = {"User-Agent": "Mothlight/1.0 (open-source threat intel SIEM)"}
 HONEYPOT_FILE = Path(__file__).parent / "honeypot.csv"
 TIMEOUT = 30  # seconds to wait for a website before giving up
 

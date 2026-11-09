@@ -23,7 +23,25 @@ import globe3d
 import query_engine as qe
 
 load_dotenv()
-st.set_page_config(page_title="OSINT SIEM", page_icon=":material/shield:", layout="wide")
+st.set_page_config(page_title="Mothlight", page_icon=":material/emoji_nature:", layout="wide")
+
+# Neon moth logo (inline SVG)
+MOTH_LOGO = (
+    '<svg width="38" height="38" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="Mothlight logo">'
+    '<defs><radialGradient id="mlw" cx="70%" cy="30%" r="90%">'
+    '<stop offset="0%" stop-color="#F5D0FF"/><stop offset="50%" stop-color="#C77DFF"/>'
+    '<stop offset="100%" stop-color="#5B2FC9"/></radialGradient>'
+    '<radialGradient id="mll"><stop offset="0%" stop-color="#FFF4E6"/><stop offset="100%" stop-color="#FFB3D9" stop-opacity="0"/></radialGradient></defs>'
+    '<circle cx="32" cy="7" r="7" fill="url(#mll)"/><circle cx="32" cy="7" r="2.6" fill="#FFF4E6"/>'
+    '<path d="M31 26 L5 17 C2 30, 12 38, 31 34 Z" fill="url(#mlw)"/>'
+    '<path d="M33 26 L59 17 C62 30, 52 38, 33 34 Z" fill="url(#mlw)"/>'
+    '<path d="M31 35 C22 38, 15 47, 21 51 C27 54, 30 44, 31.5 39 Z" fill="#8A63F0"/>'
+    '<path d="M33 35 C42 38, 49 47, 43 51 C37 54, 34 44, 32.5 39 Z" fill="#8A63F0"/>'
+    '<path d="M14 25 L24 28 M50 25 L40 28" stroke="#F5D0FF" stroke-width="1.4" stroke-linecap="round" opacity="0.7"/>'
+    '<ellipse cx="32" cy="36" rx="2.8" ry="12" fill="#1A1233" stroke="#EDE7FF" stroke-width="1.2"/>'
+    '<path d="M31 25 C29 20, 26 17, 23 16 M33 25 C35 20, 38 17, 41 16" stroke="#EDE7FF" stroke-width="1.3" fill="none" stroke-linecap="round"/>'
+    '</svg>'
+)
 
 RED, ORANGE, YELLOW, GREEN = "#FF4D6D", "#FF9F43", "#FFD166", "#3FB950"
 HONEYPOT_LOCATION = (36.67, -78.39)  # Azure East US (Virginia). Change this to your honeypot's Azure region.
@@ -115,8 +133,13 @@ iframe {{border-radius: 10px; box-shadow: 0 0 30px rgba(123,92,255,0.18);}}
 .stat {{display: inline-flex; align-items: center; gap: 8px;}}
 .signal {{display: flex; align-items: baseline; gap: 10px; margin: 7px 0;}}
 .signal .neon {{position: relative; top: -1px;}}
-.brand {{display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.15rem; letter-spacing: 0.04em;
-  color: #EDE7FF; text-shadow: 0 0 12px rgba(157,123,255,0.6); margin: 0.2rem 0 0.4rem;}}
+.brand {{display: flex; align-items: center; gap: 12px; margin: 0.2rem 0 0.6rem;}}
+.brand svg {{filter: drop-shadow(0 0 6px rgba(199,125,255,0.85)) drop-shadow(0 0 14px rgba(157,123,255,0.5));
+  animation: mothglow 3s ease-in-out infinite;}}
+@keyframes mothglow {{0%, 100% {{opacity: 1;}} 50% {{opacity: 0.72;}}}}
+.brand-name {{font-weight: 800; font-size: 1.2rem; letter-spacing: 0.18em; color: #EDE7FF;
+  text-shadow: 0 0 12px rgba(157,123,255,0.7);}}
+.brand-tag {{font-size: 0.68rem; letter-spacing: 0.06em; color: #A99BD6; margin-top: 2px;}}
 
 /* Severity count cards */
 .sevcards {{display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 1rem;}}
@@ -530,7 +553,8 @@ def map_with_countries(points, value_col, label):
 # Shared state: sidebar, data, alerts
 # =============================================================================
 with st.sidebar:
-    st.markdown(f'<div class="brand">{neon_dot("#9D7BFF", pulse=True, size=11)}OSINT SIEM</div>',
+    st.markdown(f'<div class="brand">{MOTH_LOGO}<div><div class="brand-name">MOTHLIGHT</div>'
+                '<div class="brand-tag">They always come to the light</div></div></div>',
                 unsafe_allow_html=True)
 
 data, status = {}, {}
