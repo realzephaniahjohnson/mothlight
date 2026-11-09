@@ -6,8 +6,8 @@ CONTACT = "[github.com/realzephaniahjohnson](https://github.com/realzephaniahjoh
 PRIVACY = f"""
 **Effective {EFFECTIVE}**
 
-Mothlight is a free, non-commercial threat intelligence and security learning project run by an individual
-(Zephaniah Johnson, "we", "us"). This policy explains what happens to information when you use Mothlight.
+Mothlight is a free, non-commercial threat intelligence and security learning project built and run by
+Zephaniah Johnson, Zakari Gilmer, and Bofelo Gaeonale ("we", "us"). This policy explains what happens to information when you use Mothlight.
 The short version: **we don't have accounts, ads, analytics, or trackers, and we don't keep what you search.**
 
 #### 1. What we collect
@@ -88,6 +88,7 @@ By using Mothlight you agree to these terms. If you don't agree, please don't us
 #### 1. What Mothlight is
 A free, non-commercial tool for defensive security research, threat hunting, and education. It combines public
 threat intelligence feeds and lets you search and check indicators.
+Mothlight is built and run by Zephaniah Johnson, Zakari Gilmer, and Bofelo Gaeonale (together, "the operators").
 
 #### 2. Acceptable use
 You may use Mothlight for lawful defensive security, research, and learning. You must **not**:
@@ -128,14 +129,14 @@ Mothlight is provided **"as is" and "as available"**, without warranties of any 
 including merchantability, fitness for a particular purpose, accuracy, availability, and non-infringement.
 
 #### 8. Limitation of liability
-To the fullest extent allowed by law, the operator will not be liable for any indirect, incidental, special,
+To the fullest extent allowed by law, the operators will not be liable for any indirect, incidental, special,
 consequential, or punitive damages, or any loss of data, profits, or business, arising from your use of (or
-inability to use) Mothlight or any data from it. The operator's total liability for any claim is limited to the
+inability to use) Mothlight or any data from it. The operators' total liability for any claim is limited to the
 amount you paid to use the site, which is zero. Some places don't allow certain limitations, so some of these may
 not apply to you.
 
 #### 9. Indemnity
-You agree to defend and hold harmless the operator from claims, losses, and costs (including reasonable legal
+You agree to defend and hold harmless the operators from claims, losses, and costs (including reasonable legal
 fees) arising from your misuse of Mothlight or your violation of these terms or of any law or third-party right.
 
 #### 10. Availability and changes
@@ -151,5 +152,5 @@ These terms are governed by the laws of the State of New York, USA, without rega
 disputes will be handled in the state or federal courts located in New York, except where your local law gives
 you the right to bring claims elsewhere. If any part of these terms is found unenforceable, the rest stays in
 effect. Not enforcing a term is not a waiver. These terms and the Privacy Policy are the full agreement between
-you and the operator about Mothlight.
+you and the operators about Mothlight.
 """

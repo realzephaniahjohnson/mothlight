@@ -6,7 +6,7 @@
 
 **Live demo:** https://mothlight.streamlit.app
 
-![Dashboard screenshot](screenshot.png)
+**Built by** Zephaniah Johnson, Zakari Gilmer, and Bofelo Gaeonale.
 
 ## Features
 
@@ -16,7 +16,7 @@
 | **Alerts** | Detections from 24 rules across 4 severities (Critical, High, Medium, Low), filterable by severity and source |
 | **Search** | Query console for KQL (Microsoft Sentinel), SPL (Splunk), or SQL, with an event timeline, schema browser, example queries, and CSV export |
 | **Investigate** | One box for any indicator. Auto-detects IPs, CVEs, emails, phone numbers, and domains, then returns a verdict, risk score, and evidence |
-| **Honeypot** | Attacks against my Azure honeypot, enriched with geolocation and blocklist data |
+| **Honeypot** | Attacks against our honeypot, enriched with geolocation and blocklist data |
 | **Connectors** | Health, record counts, and refresh status for every data source |
 
 ### Query engine
@@ -94,7 +94,7 @@ These are **reputation checks**. They show whether a number, address, or domain 
 | [OpenPhish Community](https://github.com/openphish/public_feed) | `phishing_urls` | Live phishing URLs (non-commercial use) | No |
 | [FTC Do Not Call data](https://www.ftc.gov/policy-notices/open-government/data-sets/do-not-call-data) | `scam_calls` | Phone numbers reported for unwanted calls (daily CSVs, or the official FTC API as a fallback) | Optional (api.data.gov) |
 | [disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains) | `disposable_domains` | Throwaway email providers | No |
-| My Azure honeypot | `honeypot` | Real attack attempts | No |
+| Our honeypot | `honeypot` | Real attack attempts | No |
 | ip-api.com, Shodan InternetDB, Google DNS, RDAP | — | Enrichment in Investigate | No |
 | [AbuseIPDB](https://www.abuseipdb.com/), [IPQualityScore](https://www.ipqualityscore.com/) | — | Extra scores in Investigate | Optional, free |
 
@@ -134,3 +134,11 @@ checks.py         # Reputation checks for IPs, CVEs, emails, phone numbers, and 
 globe3d.py        # 3D night-lights threat globe (globe.gl / WebGL)
 .streamlit/       # Theme
 ```
+
+## Team
+
+Mothlight was designed and built by:
+
+- **Zephaniah Johnson**
+- **Zakari Gilmer**
+- **Bofelo Gaeonale**

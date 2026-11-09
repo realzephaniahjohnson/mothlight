@@ -6,7 +6,7 @@
 #   Alerts        - every detection, filterable by severity
 #   Search        - query all data with KQL, SPL, or SQL
 #   Investigate   - check an IP, CVE, email, phone number, or domain
-#   Honeypot      - attacks against my Azure honeypot
+#   Honeypot      - attacks against our honeypot
 #   Connectors    - health of every data source
 
 import html
@@ -679,6 +679,7 @@ with st.sidebar:
     st.markdown('<div style="font-size:0.8rem;color:#8FA6C8;line-height:2">API keys<br>' + "<br>".join(rows) + "</div>",
                 unsafe_allow_html=True)
     st.caption("No accounts, ads, or trackers. See Privacy & Terms.")
+    st.caption("Built by Zephaniah Johnson, Zakari Gilmer, and Bofelo Gaeonale.")
 
 honeypot = None
 try:
@@ -896,14 +897,14 @@ def page_alerts():
         st.markdown(unsafe_allow_html=True, body=
             "| Severity | Rule |\n|---|---|\n"
             "| " + sev_badge("Critical") + " | Ransomware-linked CVE added to CISA KEV in the last 7 days |\n"
-            "| " + sev_badge("Critical") + " | Botnet C2 server attacked my honeypot |\n"
+            "| " + sev_badge("Critical") + " | Botnet C2 server attacked our honeypot |\n"
             "| " + sev_badge("High") + " | Ransomware-linked CVE added in the last 30 days |\n"
             "| " + sev_badge("High") + " | Exploited CVE in a widely used product (Fortinet, Ivanti, Cisco, Microsoft...) in the last 14 days |\n"
             "| " + sev_badge("High") + " | Botnet C2 server is online (Feodo Tracker) |\n"
             "| " + sev_badge("High") + " | IP is on 8+ public blocklists |\n"
             "| " + sev_badge("High") + " | Phishing site impersonating a bank, crypto exchange, PayPal, or the IRS |\n"
             "| " + sev_badge("High") + " | Scam number with a large spike in FTC reports |\n"
-            "| " + sev_badge("High") + " | IP on 5+ blocklists attacked my honeypot |\n"
+            "| " + sev_badge("High") + " | IP on 5+ blocklists attacked our honeypot |\n"
             "| " + sev_badge("High") + " | Exploited CVE with a high EPSS score (70%+ chance of exploitation) |\n"
             "| " + sev_badge("High") + " | Ransomware victim in the US or a critical sector (healthcare, government, education, finance, energy) |\n"
             "| " + sev_badge("High") + " | New data breach with 1M+ accounts or exposed passwords |\n"
@@ -912,12 +913,12 @@ def page_alerts():
             "| " + sev_badge("Medium") + " | Attacker seen doing 3+ kinds of attacks (blocklist.de) |\n"
             "| " + sev_badge("Medium") + " | Phishing site impersonating any other major brand |\n"
             "| " + sev_badge("Medium") + " | Mass-reported scam number |\n"
-            "| " + sev_badge("Medium") + " | 100+ attempts from one IP against my honeypot |\n"
+            "| " + sev_badge("Medium") + " | 100+ attempts from one IP against our honeypot |\n"
             "| " + sev_badge("Medium") + " | Any other new ransomware victim (last 7 days) |\n"
             "| " + sev_badge("Medium") + " | Any other new data breach (last 30 days) |\n"
             "| " + sev_badge("Medium") + " | Other top-20 attacking networks (DShield) |\n"
             "| " + sev_badge("Low") + " | CVE added 15 to 30 days ago |\n"
-            "| " + sev_badge("Low") + " | Tor exit node with abuse reports, or attacking my honeypot |\n"
+            "| " + sev_badge("Low") + " | Tor exit node with abuse reports, or attacking our honeypot |\n"
             "| " + sev_badge("Low") + " | Phishing page hosted on a free platform (Vercel, GitHub Pages, Netlify...) |\n\n"
             f"Each rule shows at most {CAP} alerts so one noisy rule can't bury the rest.")
 
@@ -1159,7 +1160,7 @@ def page_connectors():
                      f'<td class="clip"><a href="{esc(url)}" target="_blank">{esc(url)}</a></td>'])
     loaded = honeypot is not None
     rows.append([f'<td>{status_badge("Loaded" if loaded else "No file", NEON_GREEN if loaded else NEON_GRAY)}</td>',
-                 "<td>My Azure honeypot</td>", '<td class="dim">Attack logs</td>', '<td class="mono">honeypot</td>',
+                 "<td>Our honeypot</td>", '<td class="dim">Attack logs</td>', '<td class="mono">honeypot</td>',
                  f'<td class="mono">{len(honeypot) if loaded else 0:,}</td>', '<td class="dim">Manual</td>',
                  '<td class="dim">—</td>', '<td class="dim">honeypot.csv</td>'])
     html_table(["Status", "Connector", "Data", "Table", "Records", "Refresh", "Last pulled (UTC)", "Source"], rows)
