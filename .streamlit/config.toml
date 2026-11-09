@@ -9,6 +9,9 @@ textColor = "#E8F1FF"
 toolbarMode = "minimal"
 
 [server]
+# Uploads are only honeypot CSVs; cap them so the public site can't be flooded
+maxUploadSize = 20
+enableXsrfProtection = true
 # Check files for changes by polling, and rerun the app automatically when they change
 fileWatcherType = "poll"
 runOnSave = true

@@ -10,6 +10,8 @@
 #   Connectors    - health of every data source
 
 import html
+import re
+import time
 from datetime import datetime, timezone
 
 import pandas as pd
@@ -51,6 +53,28 @@ SEVERITY_STYLE = {"Critical": ("#FF2E63", "#FF9DB3"), "High": ("#FF7A2E", "#FFC1
                   "Medium": ("#FFB020", "#FFDD99"), "Low": ("#FFE66D", "#FFF3B0")}
 SIGNAL_COLOR = {"danger": "#FF2E63", "warning": "#FF9F43", "ok": "#39FF88", "info": "#4DD7FF"}
 NEON_GREEN, NEON_RED, NEON_GRAY = "#39FF88", "#FF2E63", "#66758C"
+
+
+SECRET_NAMES = ("ABUSEIPDB_API_KEY", "IPQS_API_KEY", "DATA_GOV_API_KEY", "RANSOMWARE_LIVE_API_KEY")
+
+
+def redact(text):
+    """Strip API keys out of error messages before they're shown (request URLs can contain them)."""
+    text = str(text)
+    for name in SECRET_NAMES:
+        secret = feeds.get_secret(name)
+        if secret:
+            text = text.replace(secret, "[redacted]")
+    return re.sub(r"(api_?key|key|token)=[^&\s'\"]+", r"\1=[redacted]", text, flags=re.IGNORECASE)
+
+
+def csv_safe(df):
+    """Exported CSVs: stop feed text that starts with = + - @ from running as a formula in Excel/Sheets."""
+    out = df.copy()
+    for col in out.columns:
+        if pd.api.types.is_object_dtype(out[col]) or pd.api.types.is_string_dtype(out[col]):
+            out[col] = out[col].map(lambda v: "'" + v if isinstance(v, str) and v[:1] in ("=", "+", "-", "@", "\t", "\r") else v)
+    return out.to_csv(index=False)
 
 
 def esc(value):
@@ -222,7 +246,7 @@ def load_connector(key):
         return LOADERS[key](), None, datetime.now(timezone.utc)
     except Exception as error:
         detail = f"{type(error).__name__}: {error}" if str(error) else type(error).__name__
-        return None, detail[:160], datetime.now(timezone.utc)
+        return None, redact(detail)[:160], datetime.now(timezone.utc)
 
 
 @st.cache_resource(ttl=3600, show_spinner="Indexing data for search...")
@@ -788,7 +812,7 @@ def page_alerts():
                        default=sorted(alerts["Source"].unique()))
     shown = alerts[alerts["Severity"].isin(severities or []) & alerts["Source"].isin(sources or [])]
     show_alerts(shown, height=620)
-    st.download_button("Export alerts (CSV)", shown.drop(columns=["lat", "lon"]).to_csv(index=False),
+    st.download_button("Export alerts (CSV)", csv_safe(shown.drop(columns=["lat", "lon"])),
                        "alerts.csv", "text/csv")
     with st.expander("Detection rules"):
         st.markdown(unsafe_allow_html=True, body=
@@ -898,7 +922,7 @@ def page_search():
                                       **CHART_LAYOUT)
                     st.plotly_chart(fig)
             st.dataframe(df, hide_index=True, height=min(600, 38 + 35 * len(df)))
-            st.download_button("Export CSV", df.to_csv(index=False), "search_results.csv", "text/csv")
+            st.download_button("Export CSV", csv_safe(df), "search_results.csv", "text/csv")
 
     with side:
         st.markdown("**Tables**")
@@ -943,6 +967,18 @@ def page_investigate():
                           label_visibility="collapsed").strip()
     if not value:
         return
+    if len(value) > 254:
+        st.error("That's too long to be an indicator.")
+        return
+    # Throttle lookups so the public site can't be used to hammer the free APIs behind it
+    if value != st.session_state.get("last_lookup"):
+        now = time.time()
+        recent = [t for t in st.session_state.get("lookup_times", []) if now - t < 600]
+        if len(recent) >= 30:
+            st.warning("Lookup limit reached (30 every 10 minutes). Try again in a few minutes.")
+            return
+        st.session_state.lookup_times = recent + [now]
+        st.session_state.last_lookup = value
     kind = feeds.detect_type(value)
     labels = {"ip": "IP address", "cve": "CVE", "email": "Email address", "phone": "Phone number", "domain": "Domain"}
     if kind == "private_ip":
@@ -969,7 +1005,7 @@ def page_investigate():
 
     verdict = report["verdict"]
     st.markdown(f'<div class="verdict {verdict}"><b>{verdict.upper()}</b> · {labels[kind]} '
-                f'<code>{value}</code> · risk score <b>{report["risk"]}</b>/100</div>', unsafe_allow_html=True)
+                f'<code>{esc(value)}</code> · risk score <b>{report["risk"]}</b>/100</div>', unsafe_allow_html=True)
 
     left, right = st.columns([1, 1])
     with left:

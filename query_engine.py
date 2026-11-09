@@ -13,6 +13,8 @@ import pandas as pd
 
 MAX_ROWS = 10_000   # most rows a query can return
 TIME_LIMIT = 10     # seconds before a query is cancelled
+MAX_VALUE_BYTES = 100_000       # largest single value a query can build (stops zeroblob/randomblob memory bombs)
+MAX_RESULT_BYTES = 25_000_000   # largest total result a query can return
 
 
 class QueryError(Exception):
@@ -59,6 +61,8 @@ def sandbox_copy(master):
     Anything other than reading data (DROP, UPDATE, ATTACH, PRAGMA...) is blocked."""
     conn = sqlite3.connect(":memory:")
     master.backup(conn)
+    conn.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, MAX_VALUE_BYTES)
+    conn.setlimit(sqlite3.SQLITE_LIMIT_SQL_LENGTH, 50_000)
     conn.set_authorizer(lambda action, *args: sqlite3.SQLITE_OK if action in ALLOWED_ACTIONS else sqlite3.SQLITE_DENY)
     deadline = time.time() + TIME_LIMIT
     conn.set_progress_handler(lambda: 1 if time.time() > deadline else 0, 10_000)
@@ -85,7 +89,15 @@ def run_query(master, language, query):
                 raise QueryError("Only SELECT queries are allowed. This console is read-only.")
 
         start = time.perf_counter()
-        results = pd.read_sql_query(f"SELECT * FROM ({sql}) LIMIT {MAX_ROWS}", conn)
+        cursor = conn.execute(f"SELECT * FROM ({sql}) LIMIT {MAX_ROWS}")
+        columns = [d[0] for d in cursor.description]
+        rows, size = [], 0
+        while chunk := cursor.fetchmany(500):
+            size += sum(len(v) if isinstance(v, (str, bytes)) else 8 for row in chunk for v in row)
+            if size > MAX_RESULT_BYTES:
+                raise QueryError("The results are too large. Select fewer columns or add a LIMIT.")
+            rows.extend(chunk)
+        results = pd.DataFrame.from_records(rows, columns=columns)
         ms = (time.perf_counter() - start) * 1000
         return results, sql, ms
     except QueryError:
