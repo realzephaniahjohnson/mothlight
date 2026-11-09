@@ -42,7 +42,7 @@ try {
     .ringLat("lat").ringLng("lng").ringColor(r => t => `rgba(${r.rgb},${1 - t})`).ringMaxRadius("max")
     .ringPropagationSpeed(2.5).ringRepeatPeriod(1100)
     .arcStartLat("slat").arcStartLng("slng").arcEndLat("elat").arcEndLng("elng")
-    .arcColor(() => ["rgba(255,90,140,0.05)", "rgba(255,90,140,0.95)"]).arcStroke(0.45)
+    .arcColor(() => ["rgba(34,211,238,0.05)", "rgba(34,211,238,0.95)"]).arcStroke(0.45)
     .arcDashLength(0.35).arcDashGap(1.2).arcDashInitialGap(() => Math.random() * 1.5)
     .arcDashAnimateTime(2200).arcAltitudeAutoScale(0.45).arcLabel("label");
 
@@ -61,17 +61,29 @@ try {
       `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap">
          <input type="checkbox" data-i="${i}" ${l.on ? "checked" : ""} style="accent-color:${l.color};margin:0">
          <span style="color:${l.color}">●</span> ${l.name}
-         <span style="color:#8FA6C8;margin-left:auto;padding-left:8px">${l.count}</span></label>`).join("") + '</div>';
+         <span style="color:#8FA6C8;margin-left:auto;padding-left:8px">${l.count}</span></label>`).join("")
+      + '<div style="display:flex;gap:6px;margin-top:6px">'
+      + '<button id="lclear" style="__SBTN__">Clear all</button>'
+      + '<button id="lall" style="__SBTN__">Show all</button></div></div>';
     // Tap "Layers" to fold the list away. It starts folded on phones so it doesn't cover the globe.
     const body = document.getElementById("lbody"), arrow = document.getElementById("larrow");
     const fold = closed => { body.style.display = closed ? "none" : "block"; arrow.textContent = closed ? "▸" : "▾"; };
     fold(window.innerWidth < 520);
     document.getElementById("lhead").onclick = () => fold(body.style.display !== "none");
-    panel.querySelectorAll("input").forEach(box => box.onchange = () => {
+    const boxes = panel.querySelectorAll("input");
+    boxes.forEach(box => box.onchange = () => {
       layers[box.dataset.i].on = box.checked;
       refresh();
       if (layers[box.dataset.i].redraw) layers[box.dataset.i].redraw();
     });
+    const setAll = on => {
+      layers.forEach(l => l.on = on);
+      boxes.forEach(box => box.checked = on);
+      refresh();
+      layers.forEach(l => l.redraw && l.redraw());
+    };
+    document.getElementById("lclear").onclick = () => setAll(false);
+    document.getElementById("lall").onclick = () => setAll(true);
   }
   if (layers.length <= 1 && !panel.textContent.trim()) panel.style.display = "none";
   refresh();
@@ -135,7 +147,7 @@ try {
   const capColor = f => {
     const t = heatOn() ? intensity(f) : 0;
     if (!t) return "rgba(5,10,22,0.3)";
-    const c = [60 + 195 * t, 140 - 80 * t, 255 - 175 * t];  // blue -> red
+    const c = [25 + 175 * t, 70 + 165 * t, 170 + 85 * t];  // deep blue -> icy white
     return `rgba(${c.map(Math.round).join(",")},${(0.28 + 0.42 * t).toFixed(2)})`;
   };
   const polyLabel = f => {
@@ -187,6 +199,8 @@ try {
 </script>
 """
 
+SMALL_BUTTON_STYLE = ("flex:1;background:rgba(20,40,80,0.9);color:#E6EDF3;border:1px solid rgba(77,159,255,0.35);"
+                      "border-radius:5px;padding:3px 8px;font:11px -apple-system,Segoe UI,sans-serif;cursor:pointer")
 BUTTON_STYLE = ("background:rgba(12,22,42,0.85);color:#E6EDF3;border:1px solid rgba(77,159,255,0.3);"
                 "border-radius:6px;padding:5px 10px;cursor:pointer")
 
@@ -213,7 +227,8 @@ def render_layers(layers, center=(25, -40), legend="", height=560, heat=None):
     page = (TEMPLATE.replace("__DATA__", data).replace("__JS__", GLOBE_JS).replace("__IMG__", IMG)
             .replace("__COUNTRIES__", COUNTRIES)
             .replace("__H__", str(height)).replace("__LAT__", str(center[0])).replace("__LNG__", str(center[1]))
-            .replace("__BTN__", BUTTON_STYLE).replace("__LEGEND__", legend))
+            .replace("__BTN__", BUTTON_STYLE).replace("__SBTN__", SMALL_BUTTON_STYLE)
+            .replace("__LEGEND__", legend))
     st.iframe(page, height=height + 4)
 
 
@@ -301,9 +316,9 @@ def show_scam_call_globe(state_counts):
 # The combined threat globe (Overview page)
 # -----------------------------------------------------------------------------
 LAYER_COLORS = {
-    "Botnet C2": "#FF2E63", "Brute force": "#FF9F43", "Web attacks": "#FFD166", "Spam & mail": "#F78FB3",
+    "Botnet C2": "#FF2E63", "Brute force": "#FF9F43", "Web attacks": "#FFD166", "Spam & mail": "#38BDF8",
     "Scanner": "#A3E635", "Tor exit": "#4DA3FF", "Blocklisted": "#A9D1FF", "Scam calls (US)": "#2EE6C5",
-    "Alerts": "#FFFFFF", "Honeypot attacks": "#FF5A8C", "Ransomware victims": "#FF6B9D",
+    "Alerts": "#FFFFFF", "Honeypot attacks": "#22D3EE", "Ransomware victims": "#2F6BFF",
 }
 SEVERITY_RGB = {"Critical": "255,46,99", "High": "255,122,46", "Medium": "255,176,32", "Low": "255,230,109"}
 SEVERITY_SIZE = {"Critical": 7, "High": 5.5, "Medium": 4, "Low": 3}
