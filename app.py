@@ -383,14 +383,14 @@ def build_ip_intel(version, _data):
     return intel[["ip", "country", "group", "tags", "attack_types", "score", "risk"]]
 
 
-MAP_BUDGET = {"Botnet C2": 200, "Brute force": 330, "Web attacks": 200, "Spam & mail": 150,
-              "Scanner": 200, "Tor exit": 100, "Blocklisted": 250}  # ~1,400 IPs
+MAP_BUDGET = {"Botnet C2": 200, "Brute force": 350, "Web attacks": 220, "Spam & mail": 160,
+              "Scanner": 220, "Blocklisted": 250}  # ~1,400 IPs
 PER_COUNTRY = 12  # first pass: up to this many IPs per country, so every region shows up
 
 
 def map_ips(threat_ips, intel):
     """Pick IPs for the globe: the riskiest ones, spread across as many countries as possible."""
-    pool = pd.concat([threat_ips, intel[intel["group"] == "Tor exit"]])
+    pool = threat_ips
     picks = []
     for group, budget in MAP_BUDGET.items():
         frame = pool[pool["group"] == group].sort_values("risk", ascending=False)
@@ -794,7 +794,9 @@ def page_overview():
     st.caption(f"Countries glow by how many malicious IPs they host ({len(threat_ips):,} IPs across {countries} countries). "
                f"Spikes are {shown:,} sample IPs spread across those countries, plus ransomware victims, scam calls "
                "by state, and alerts as pulsing rings. "
-               "Use the Layers box to show or hide each one. Drag to spin, use ＋/－ to zoom, hover for details.")
+               "Malicious IP dots are colored by type: red botnet C2, orange brute force, yellow web attacks, "
+               "sky blue spam, green scanners, pale blue blocklisted. Tap a layer to show or hide it. "
+               "Drag to spin, use ＋/－ to zoom, hover for details.")
 
     left, right = st.columns([3, 2])
     with left:

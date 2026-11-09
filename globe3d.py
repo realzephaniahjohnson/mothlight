@@ -14,7 +14,7 @@ IMG = "https://cdn.jsdelivr.net/npm/three-globe/example/img/"
 TEMPLATE = """
 <meta name="referrer" content="no-referrer">
 <div id="wrap" style="position:relative;width:100%;height:calc(100vh - 4px);border-radius:8px;overflow:hidden;background:#000">
-<style>html,body{margin:0;background:#000}</style>
+<style>html,body{margin:0;background:#000}.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;cursor:pointer;font:11px -apple-system,Segoe UI,sans-serif;line-height:1.7;color:#E8F1FF;background:rgba(30,60,110,0.55);border:1px solid var(--c);white-space:nowrap}.chip i{width:7px;height:7px;border-radius:50%;background:var(--c);display:inline-block}.chip.off{color:#6B7C96;background:transparent;border-color:rgba(107,124,150,0.4)}.chip.off i{background:transparent;box-shadow:inset 0 0 0 1px #6B7C96}</style>
   <div id="globe"></div>
   <div style="position:absolute;left:12px;bottom:12px;display:flex;gap:6px;font:12px -apple-system,Segoe UI,sans-serif">
     <button id="spin" style="__BTN__">❚❚ Pause</button>
@@ -24,7 +24,7 @@ TEMPLATE = """
   </div>
   <div id="layers" style="position:absolute;right:12px;top:10px;color:#E8F1FF;font:12px -apple-system,Segoe UI,sans-serif;
               background:rgba(12,22,42,0.8);border:1px solid rgba(77,159,255,0.3);border-radius:8px;padding:8px 12px;
-              line-height:1.9;max-width:230px">__LEGEND__</div>
+              line-height:1.9;max-width:250px">__LEGEND__</div>
   <div id="err" style="display:none;position:absolute;inset:0;color:#8B949E;font:14px sans-serif;
               align-items:center;justify-content:center">The 3D globe needs WebGL and an internet connection.</div>
 </div>
@@ -56,13 +56,15 @@ try {
          .arcsData(on.flatMap(l => l.arcs || []));
   };
   if (layers.length > 1) {
-    panel.innerHTML = '<div id="lhead" style="font-weight:600;margin-bottom:2px;cursor:pointer;user-select:none">Layers <span id="larrow">▾</span></div>'
-      + '<div id="lbody">' + layers.map((l, i) =>
-      `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap">
-         <input type="checkbox" data-i="${i}" ${l.on ? "checked" : ""} style="accent-color:${l.color};margin:0">
-         <span style="color:${l.color}">●</span> ${l.name}
-         <span style="color:#8FA6C8;margin-left:auto;padding-left:8px">${l.count}</span></label>`).join("")
-      + '<div style="display:flex;gap:6px;margin-top:6px">'
+    // Compact chips with short names: tap one to show or hide that layer. Counts are in the tooltip.
+    const SHORT = {"Country heat": "Countries", "Scam calls (US)": "Scam calls", "Ransomware victims": "Ransomware",
+                   "Honeypot attacks": "Honeypot"};
+    const esc = t => String(t).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+    panel.innerHTML = '<div id="lhead" style="font-weight:600;cursor:pointer;user-select:none">Layers <span id="larrow">▾</span></div>'
+      + '<div id="lbody"><div class="chips">' + layers.map((l, i) =>
+      `<span class="chip${l.on ? "" : " off"}" data-i="${i}" style="--c:${l.color}"
+         title="${esc(l.name)}: ${Number(l.count).toLocaleString()}"><i></i>${esc(SHORT[l.name] || l.name)}</span>`).join("")
+      + '</div><div style="display:flex;gap:6px;margin-top:7px">'
       + '<button id="lclear" style="__SBTN__">Clear all</button>'
       + '<button id="lall" style="__SBTN__">Show all</button></div></div>';
     // Tap "Layers" to fold the list away. It starts folded on phones so it doesn't cover the globe.
@@ -70,15 +72,17 @@ try {
     const fold = closed => { body.style.display = closed ? "none" : "block"; arrow.textContent = closed ? "▸" : "▾"; };
     fold(window.innerWidth < 520);
     document.getElementById("lhead").onclick = () => fold(body.style.display !== "none");
-    const boxes = panel.querySelectorAll("input");
-    boxes.forEach(box => box.onchange = () => {
-      layers[box.dataset.i].on = box.checked;
+    const chips = panel.querySelectorAll(".chip");
+    chips.forEach(chip => chip.onclick = () => {
+      const layer = layers[chip.dataset.i];
+      layer.on = !layer.on;
+      chip.classList.toggle("off", !layer.on);
       refresh();
-      if (layers[box.dataset.i].redraw) layers[box.dataset.i].redraw();
+      if (layer.redraw) layer.redraw();
     });
     const setAll = on => {
       layers.forEach(l => l.on = on);
-      boxes.forEach(box => box.checked = on);
+      chips.forEach(chip => chip.classList.toggle("off", !on));
       refresh();
       layers.forEach(l => l.redraw && l.redraw());
     };
@@ -274,7 +278,7 @@ def show_honeypot_globe(points_df, honeypot_location):
              "label": label(f"{r.ip} → honeypot", f"{r.attempts:,} attempts")}
             for r in points_df.nlargest(150, "attempts").itertuples()]
     points.append({"lat": hp_lat, "lng": hp_lng, "color": "#4DA3FF", "r": 0.6, "alt": 0.05,
-                   "label": label("My honeypot (Azure)")})
+                   "label": label("Our honeypot (Oracle Cloud, Montreal)")})
     rings.append({"lat": hp_lat, "lng": hp_lng, "rgb": "77,163,255", "max": 6})
     render(points, rings, arcs, center=(hp_lat, hp_lng - 30),
            legend=LEGEND_SEVERITY + ' &nbsp;<span style="color:#4DA3FF">●</span> Honeypot')
@@ -320,6 +324,7 @@ LAYER_COLORS = {
     "Scanner": "#A3E635", "Tor exit": "#4DA3FF", "Blocklisted": "#A9D1FF", "Scam calls (US)": "#2EE6C5",
     "Alerts": "#FFFFFF", "Honeypot attacks": "#22D3EE", "Ransomware victims": "#2F6BFF",
 }
+IP_GROUPS = ["Botnet C2", "Brute force", "Web attacks", "Spam & mail", "Scanner", "Blocklisted"]
 SEVERITY_RGB = {"Critical": "255,46,99", "High": "255,122,46", "Medium": "255,176,32", "Low": "255,230,109"}
 SEVERITY_SIZE = {"Critical": 7, "High": 5.5, "Medium": 4, "Low": 3}
 
@@ -337,18 +342,16 @@ def threat_globe(ips, state_counts=None, alerts=None, honeypot_points=None, hone
         layers.append({"name": "Country heat", "color": "#3D8BFF", "on": True, "count": int(totals.sum()),
                        "heat": True, "points": []})
     if ips is not None and not ips.empty:
+        # One "Malicious IPs" layer; each dot keeps its attack-type color (Tor exits alone aren't malicious)
         top = ips["risk"].max() or 1
-        for group in LAYER_COLORS:
-            frame = ips[ips["group"] == group]
-            if frame.empty:
-                continue
-            color = LAYER_COLORS[group]
-            points = [{"lat": r.lat, "lng": r.lon, "color": color, "r": 0.22,
-                       "alt": 0.01 + 0.14 * r.risk / top,
-                       "label": label(r.ip, r.tags, f"{COUNTRY_NAMES.get(r.country, r.country)} · {r.isp}",
-                                      f"Blocklist score {r.score} · risk {r.risk}")}
-                      for r in frame.itertuples()]
-            layers.append({"name": group, "color": color, "on": group != "Tor exit", "count": len(points),
+        frame = ips[ips["group"].isin(IP_GROUPS)]
+        points = [{"lat": r.lat, "lng": r.lon, "color": LAYER_COLORS[r.group], "r": 0.22,
+                   "alt": 0.01 + 0.14 * r.risk / top,
+                   "label": label(f"{r.ip} · {r.group}", r.tags, f"{COUNTRY_NAMES.get(r.country, r.country)} · {r.isp}",
+                                  f"Blocklist score {r.score} · risk {r.risk}")}
+                  for r in frame.itertuples()]
+        if points:
+            layers.append({"name": "Malicious IPs", "color": "#4D9FFF", "on": True, "count": len(points),
                            "points": points})
 
     if state_counts is not None and not state_counts.empty:
@@ -384,7 +387,7 @@ def threat_globe(ips, state_counts=None, alerts=None, honeypot_points=None, hone
         layers.append({"name": "Honeypot attacks", "color": LAYER_COLORS["Honeypot attacks"], "on": True,
                        "count": int(honeypot_points["attempts"].sum()), "arcs": arcs,
                        "points": [{"lat": hp_lat, "lng": hp_lng, "color": "#4DA3FF", "r": 0.6, "alt": 0.05,
-                                   "label": label("My honeypot (Azure)")}],
+                                   "label": label("Our honeypot (Oracle Cloud, Montreal)")}],
                        "rings": [{"lat": hp_lat, "lng": hp_lng, "rgb": "77,163,255", "max": 6}]})
 
     render_layers(layers, height=height, heat=heat)
