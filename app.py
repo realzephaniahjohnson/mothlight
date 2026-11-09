@@ -692,7 +692,7 @@ with st.sidebar:
     st.caption("Built by Zephaniah Johnson, Zakari Gilmer, and Bofelo Gaeonale.")
 
 # Honeypot: an uploaded CSV wins, then the live Cowrie feed, then a local honeypot.csv
-honeypot, honeypot_source, honeypot_error = None, None, None
+honeypot, honeypot_source, honeypot_error, honeypot_via = None, None, None, None
 if uploaded is not None:
     try:
         honeypot, honeypot_source = feeds.load_honeypot(uploaded), "upload"
@@ -700,7 +700,7 @@ if uploaded is not None:
         st.sidebar.error(f"Couldn't read the honeypot file: {redact(error)[:160]}")
 if honeypot is None:
     try:
-        honeypot = feeds.get_live_honeypot()
+        honeypot, honeypot_via = feeds.get_live_honeypot()
         honeypot_source = "live" if honeypot is not None else None
     except Exception as error:
         honeypot_error = redact(error)[:160]
@@ -1226,7 +1226,7 @@ def page_connectors():
         badge = status_badge("Error", NEON_RED, pulse=True) + \
             f'<br><span style="color:#FF9DB3;font-size:0.75rem">{esc(honeypot_error)}</span>'
     elif honeypot_source == "live":
-        badge = status_badge("Live", NEON_GREEN, pulse=True)
+        badge = status_badge("Live", NEON_GREEN, pulse=True)  # which backup served it stays private
     else:
         badge = status_badge("Loaded" if loaded else "Waiting", NEON_GREEN if loaded else NEON_GRAY)
     latest = honeypot["time"].max() if loaded and "time" in honeypot else None

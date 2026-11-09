@@ -577,18 +577,21 @@ IP_COLUMN_NAMES = ["ip", "ipaddress", "ip_address", "src_ip", "sourceip", "sourc
 TIME_COLUMN_NAMES = ["timestamp", "timegenerated", "time", "date", "datetime", "eventtime"]
 
 
-@st.cache_data(ttl=300, show_spinner=False)
-def get_live_honeypot():
-    """Live attacks on our Cowrie honeypot. The VM publishes a fresh CSV every 5 minutes.
+HONEYPOT_SOURCES = [  # tried in order, so one outage doesn't take the honeypot off the site
+    ("GitHub raw", HONEYPOT_LIVE_URL, {}),
+    ("GitHub API", "https://api.github.com/repos/realzephaniahjohnson/mothlight-honeypot-data/contents/honeypot.csv",
+     {"Accept": "application/vnd.github.raw"}),
+    ("jsDelivr CDN", "https://cdn.jsdelivr.net/gh/realzephaniahjohnson/mothlight-honeypot-data@main/honeypot.csv", {}),
+]
 
-    Everything in it was typed by attackers, so it's treated as untrusted text: size-capped,
-    validated, and only ever shown through escaped tables.
-    """
-    response = requests.get(HONEYPOT_LIVE_URL, headers=HEADERS, timeout=TIMEOUT, stream=True)
-    if response.status_code == 404:
-        return None  # nothing published yet
-    response.raise_for_status()
-    content = response.raw.read(HONEYPOT_MAX_BYTES + 1, decode_content=True)
+
+@st.cache_resource
+def _honeypot_last_good():
+    return {}
+
+
+def _parse_honeypot(content):
+    """Everything in the file was typed by attackers: size-capped, validated, shown only in escaped tables."""
     if len(content) > HONEYPOT_MAX_BYTES:
         raise ValueError("The honeypot file is too large.")
     df = pd.read_csv(io.BytesIO(content), dtype=str, keep_default_na=False)
@@ -602,6 +605,34 @@ def get_live_honeypot():
         out[column] = df[column].str.slice(0, 200) if column in df else ""
     out = out[out["event"].isin(HONEYPOT_EVENTS) & out["ip"].apply(lambda x: detect_type(x) == "ip")]
     return out.reset_index(drop=True)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def get_live_honeypot():
+    """Live attacks on our Cowrie honeypot (published every 5 minutes), with backups.
+
+    Returns (data, source). Tries each source in order; if all fail, falls back to the last
+    good copy this server loaded. Returns (None, None) if nothing was ever published.
+    """
+    errors, not_found = [], 0
+    for name, url, extra in HONEYPOT_SOURCES:
+        try:
+            response = requests.get(url, headers={**HEADERS, **extra}, timeout=15, stream=True)
+            if response.status_code == 404:
+                not_found += 1
+                continue
+            response.raise_for_status()
+            df = _parse_honeypot(response.raw.read(HONEYPOT_MAX_BYTES + 1, decode_content=True))
+            _honeypot_last_good().update(data=df, at=pd.Timestamp.now(tz="UTC"))
+            return df, name
+        except Exception as error:
+            errors.append(f"{name}: {type(error).__name__}")
+    last = _honeypot_last_good()
+    if "data" in last:
+        return last["data"], f"last good copy from {last['at']:%H:%M} UTC"
+    if not_found == len(HONEYPOT_SOURCES):
+        return None, None
+    raise ConnectionError("The honeypot feed is temporarily unavailable.")
 
 
 def load_honeypot(file=None):
