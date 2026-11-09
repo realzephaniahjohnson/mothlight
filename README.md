@@ -29,7 +29,7 @@
 place, raises alerts from 24 detection rules, maps everything on a 3D threat globe, and lets you hunt with **KQL**,
 **SPL**, or **SQL**. Drop in any IP, CVE, email, phone number, or domain and it returns a verdict with the evidence.
 
-<p align="center"><img src="assets/globe.jpg" alt="Mothlight threat globe" width="100%"></p>
+<p align="center"><img src="assets/globe.jpg" alt="Mothlight overview: live KPIs and the 3D threat globe with honeypot attack arcs" width="100%"></p>
 
 ## ✨ Features
 
