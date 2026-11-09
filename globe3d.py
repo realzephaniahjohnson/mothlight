@@ -25,7 +25,17 @@ TEMPLATE = """
   <div id="layers" style="position:absolute;right:12px;top:10px;color:#E8F1FF;font:12px -apple-system,Segoe UI,sans-serif;
               background:rgba(12,22,42,0.8);border:1px solid rgba(77,159,255,0.3);border-radius:8px;padding:8px 12px;
               line-height:1.9;max-width:250px">__LEGEND__</div>
-  <div id="err" style="display:none;position:absolute;inset:0;color:#8B949E;font:14px sans-serif;
+  <div id="card" style="display:none;position:absolute;left:10px;bottom:52px;z-index:5;max-width:290px;
+     background:rgba(8,16,34,0.96);border:1px solid rgba(77,159,255,0.45);border-radius:10px;padding:10px 12px;
+     font:12px -apple-system,Segoe UI,sans-serif;color:#E6EDF3;box-shadow:0 0 18px rgba(61,139,255,0.25)">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+    <b style="color:#7CC0FF;letter-spacing:0.5px">DETAILS</b>
+    <span id="cardx" style="cursor:pointer;color:#8FA6C8;font-size:15px;padding:0 2px">✕</span></div>
+  <div id="cardbody"></div>
+  <a id="cardgo" target="_blank" rel="noopener" style="display:none;margin-top:8px;text-align:center;text-decoration:none;
+     background:#1F4FC9;color:#fff;border-radius:6px;padding:6px 10px;font-weight:600">Investigate full report →</a>
+</div>
+<div id="err" style="display:none;position:absolute;inset:0;color:#8B949E;font:14px sans-serif;
               align-items:center;justify-content:center">The 3D globe needs WebGL and an internet connection.</div>
 </div>
 <script src="__JS__"></script>
@@ -45,6 +55,23 @@ try {
     .arcColor(() => ["rgba(34,211,238,0.05)", "rgba(34,211,238,0.95)"]).arcStroke(0.45)
     .arcDashLength(0.35).arcDashGap(1.2).arcDashInitialGap(() => Math.random() * 1.5)
     .arcDashAnimateTime(2200).arcAltitudeAutoScale(0.45).arcLabel("label");
+
+  // Tap a spike, alert, or attack arc: show its details and a link to the full Investigate report
+  const card = document.getElementById("card"), cardBody = document.getElementById("cardbody"),
+        cardGo = document.getElementById("cardgo");
+  let base = "__BASE__";
+  try { base = window.top.location.origin; } catch (e) {}
+  const show = d => {
+    if (!d || !d.label) return;
+    cardBody.innerHTML = d.label;  // built and escaped server-side
+    const q = d.q && /^[A-Za-z0-9.:_@+() -]{3,254}$/.test(d.q) ? d.q : null;
+    cardGo.style.display = q ? "block" : "none";
+    if (q) cardGo.href = base + "/page_investigate?q=" + encodeURIComponent(q);
+    card.style.display = "block";
+    globe.controls().autoRotate = false;
+  };
+  document.getElementById("cardx").onclick = () => { card.style.display = "none"; };
+  globe.onPointClick(show).onArcClick(show).onGlobeClick(() => { card.style.display = "none"; });
 
   // Layers: each has its own points / rings / arcs and a checkbox to show or hide it
   const layers = DATA.layers;
@@ -230,7 +257,7 @@ def render_layers(layers, center=(25, -40), legend="", height=560, heat=None):
     data = json.dumps({"layers": layers, "heat": heat or {}}).replace("</", "<\\/")
     page = (TEMPLATE.replace("__DATA__", data).replace("__JS__", GLOBE_JS).replace("__IMG__", IMG)
             .replace("__COUNTRIES__", COUNTRIES)
-            .replace("__H__", str(height)).replace("__LAT__", str(center[0])).replace("__LNG__", str(center[1]))
+            .replace("__H__", str(height)).replace("__BASE__", APP_URL).replace("__LAT__", str(center[0])).replace("__LNG__", str(center[1]))
             .replace("__BTN__", BUTTON_STYLE).replace("__SBTN__", SMALL_BUTTON_STYLE)
             .replace("__LEGEND__", legend))
     st.iframe(page, height=height + 4)
@@ -258,7 +285,7 @@ def ip_globe(points_df, value_col, value_name, high, medium, center=(25, -40)):
         color, rgb = severity_color(value, high, medium)
         points.append({"lat": row.lat, "lng": row.lon, "color": color, "r": 0.22,
                        "alt": 0.01 + 0.12 * value / top,
-                       "label": label(row.ip, f"{row.country} · {row.isp}", f"{value_name}: {value:,}")})
+                       "label": label(row.ip, f"{row.country} · {row.isp}", f"{value_name}: {value:,}"), "q": row.ip})
     for row in points_df.nlargest(12, value_col).itertuples():
         rings.append({"lat": row.lat, "lng": row.lon, "rgb": severity_color(getattr(row, value_col), high, medium)[1],
                       "max": 4})
@@ -275,7 +302,7 @@ def show_honeypot_globe(points_df, honeypot_location):
     points, rings = ip_globe(points_df, "attempts", "Attempts", high=100, medium=20)
     hp_lat, hp_lng = honeypot_location
     arcs = [{"slat": r.lat, "slng": r.lon, "elat": hp_lat, "elng": hp_lng,
-             "label": label(f"{r.ip} → honeypot", f"{r.attempts:,} attempts")}
+             "label": label(f"{r.ip} → honeypot", f"{r.attempts:,} attempts"), "q": r.ip}
             for r in points_df.nlargest(150, "attempts").itertuples()]
     points.append({"lat": hp_lat, "lng": hp_lng, "color": "#4DA3FF", "r": 0.6, "alt": 0.05,
                    "label": label("Our honeypot (Oracle Cloud, Montreal)")})
@@ -324,6 +351,7 @@ LAYER_COLORS = {
     "Scanner": "#A3E635", "Tor exit": "#4DA3FF", "Blocklisted": "#A9D1FF", "Scam calls (US)": "#2EE6C5",
     "Alerts": "#FFFFFF", "Honeypot attacks": "#22D3EE", "Ransomware victims": "#2F6BFF",
 }
+APP_URL = "https://mothlight.streamlit.app"  # fallback if the page can't see its own address
 IP_GROUPS = ["Botnet C2", "Brute force", "Web attacks", "Spam & mail", "Scanner", "Blocklisted"]
 SEVERITY_RGB = {"Critical": "255,46,99", "High": "255,122,46", "Medium": "255,176,32", "Low": "255,230,109"}
 SEVERITY_SIZE = {"Critical": 7, "High": 5.5, "Medium": 4, "Low": 3}
@@ -348,7 +376,7 @@ def threat_globe(ips, state_counts=None, alerts=None, honeypot_points=None, hone
         points = [{"lat": r.lat, "lng": r.lon, "color": LAYER_COLORS[r.group], "r": 0.22,
                    "alt": 0.01 + 0.14 * r.risk / top,
                    "label": label(f"{r.ip} · {r.group}", r.tags, f"{COUNTRY_NAMES.get(r.country, r.country)} · {r.isp}",
-                                  f"Blocklist score {r.score} · risk {r.risk}")}
+                                  f"Blocklist score {r.score} · risk {r.risk}"), "q": r.ip}
                   for r in frame.itertuples()]
         if points:
             layers.append({"name": "Malicious IPs", "color": "#4D9FFF", "on": True, "count": len(points),
@@ -373,7 +401,7 @@ def threat_globe(ips, state_counts=None, alerts=None, honeypot_points=None, hone
         rings = [{"lat": r.lat, "lng": r.lon, "rgb": SEVERITY_RGB[r.Severity], "max": SEVERITY_SIZE[r.Severity]}
                  for r in placed.itertuples()]
         points = [{"lat": r.lat, "lng": r.lon, "color": f"rgb({SEVERITY_RGB[r.Severity]})", "r": 0.35, "alt": 0.02,
-                   "label": label(f"{r.Severity} alert: {r.Alert}", r.Entity, r.Details)}
+                   "label": label(f"{r.Severity} alert: {r.Alert}", r.Entity, r.Details), "q": r.Entity}
                   for r in placed.itertuples()]
         if rings:
             layers.append({"name": "Alerts", "color": LAYER_COLORS["Alerts"], "on": True, "count": len(rings),
@@ -382,7 +410,7 @@ def threat_globe(ips, state_counts=None, alerts=None, honeypot_points=None, hone
     if honeypot_points is not None and not honeypot_points.empty and honeypot_location:
         hp_lat, hp_lng = honeypot_location
         arcs = [{"slat": r.lat, "slng": r.lon, "elat": hp_lat, "elng": hp_lng,
-                 "label": label(f"{r.ip} → honeypot", f"{r.attempts:,} attempts")}
+                 "label": label(f"{r.ip} → honeypot", f"{r.attempts:,} attempts"), "q": r.ip}
                 for r in honeypot_points.nlargest(150, "attempts").itertuples()]
         layers.append({"name": "Honeypot attacks", "color": LAYER_COLORS["Honeypot attacks"], "on": True,
                        "count": int(honeypot_points["attempts"].sum()), "arcs": arcs,

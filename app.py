@@ -1077,9 +1077,14 @@ def pivot_to_search(query):
 def page_investigate():
     st.title("Investigate")
     st.caption("Check any indicator against every feed: IP address, CVE, email, phone number, or domain.")
+    # Opened from the globe (?q=...): prefill the box once with that indicator
+    linked = str(st.query_params.get("q", ""))[:254].strip()
+    if linked and st.session_state.get("linked_q") != linked:
+        st.session_state.linked_q = linked
+        st.session_state.indicator = linked
     value = st.text_input("Indicator", placeholder="185.220.101.1 · CVE-2024-3400 · billing@paypa1.com · "
                                                   "(844) 502-3148 · paypal-login.net",
-                          label_visibility="collapsed", autocomplete="off", max_chars=254).strip()
+                          label_visibility="collapsed", autocomplete="off", max_chars=254, key="indicator").strip()
     if not value:
         return
     if len(value) > 254:
