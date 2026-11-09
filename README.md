@@ -19,7 +19,7 @@
 <img src="https://img.shields.io/badge/hunt_with-KQL_·_SPL_·_SQL-4D9FFF?style=flat-square&labelColor=0B1633" alt="KQL SPL SQL">
 <img src="https://img.shields.io/badge/API_keys_needed-none-4D9FFF?style=flat-square&labelColor=0B1633" alt="No keys needed">
 
-**[Live demo](https://mothlight.streamlit.app)** · **[Features](#-features)** · **[Live honeypot](#-live-honeypot)** · **[Detections](#-detection-rules)** · **[Data sources](#-data-sources)** · **[Team](#-team)**
+**[Live demo](https://mothlight.streamlit.app)** · **[Features](#-features)** · **[Live honeypot](#-live-honeypot)** · **[Reports](#-reports)** · **[Detections](#-detection-rules)** · **[Data sources](#-data-sources)** · **[Team](#-team)**
 
 </div>
 
@@ -83,6 +83,14 @@ flowchart LR
 - **Untrusted by default:** everything in the data was typed by attackers, so it's size-capped, validated, and only shown escaped.
 - **No public admin door:** the real SSH port is reachable only over Tailscale.
 - **Raw data is public:** [mothlight-honeypot-data](https://github.com/realzephaniahjohnson/mothlight-honeypot-data).
+
+## 📝 Reports
+
+Write-ups from our own honeypot data: what attacked us, what they did, and how it maps to MITRE ATT&CK.
+
+| Date | Report | Highlights |
+|---|---|---|
+| Nov 9, 2026 | [Our first 12 hours under attack](reports/2026-11-09-first-12-hours.md) | 6,003 events from 14 IPs · a 1,197-login census bot · bots that test for honeypots · a hidden-file dropper |
 
 ## 🚨 Detection rules
 
@@ -163,6 +171,7 @@ checks.py         reputation checks for IPs, CVEs, emails, phones, and domains
 globe3d.py        3D night-lights threat globe (globe.gl / WebGL)
 legal.py          privacy policy and terms
 honeypot/         export job that runs on the honeypot VM
+reports/          write-ups of real attacks on our honeypot
 assets/           logo, banner, and screenshots
 ```
 
