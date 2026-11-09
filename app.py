@@ -29,17 +29,17 @@ st.set_page_config(page_title="Mothlight", page_icon=":material/emoji_nature:", 
 MOTH_LOGO = (
     '<svg width="38" height="38" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="Mothlight logo">'
     '<defs><radialGradient id="mlw" cx="70%" cy="30%" r="90%">'
-    '<stop offset="0%" stop-color="#F5D0FF"/><stop offset="50%" stop-color="#C77DFF"/>'
-    '<stop offset="100%" stop-color="#5B2FC9"/></radialGradient>'
-    '<radialGradient id="mll"><stop offset="0%" stop-color="#FFF4E6"/><stop offset="100%" stop-color="#FFB3D9" stop-opacity="0"/></radialGradient></defs>'
+    '<stop offset="0%" stop-color="#D0ECFF"/><stop offset="50%" stop-color="#4DA8FF"/>'
+    '<stop offset="100%" stop-color="#1F4FC9"/></radialGradient>'
+    '<radialGradient id="mll"><stop offset="0%" stop-color="#FFF4E6"/><stop offset="100%" stop-color="#9ED8FF" stop-opacity="0"/></radialGradient></defs>'
     '<circle cx="32" cy="7" r="7" fill="url(#mll)"/><circle cx="32" cy="7" r="2.6" fill="#FFF4E6"/>'
     '<path d="M31 26 L5 17 C2 30, 12 38, 31 34 Z" fill="url(#mlw)"/>'
     '<path d="M33 26 L59 17 C62 30, 52 38, 33 34 Z" fill="url(#mlw)"/>'
-    '<path d="M31 35 C22 38, 15 47, 21 51 C27 54, 30 44, 31.5 39 Z" fill="#8A63F0"/>'
-    '<path d="M33 35 C42 38, 49 47, 43 51 C37 54, 34 44, 32.5 39 Z" fill="#8A63F0"/>'
-    '<path d="M14 25 L24 28 M50 25 L40 28" stroke="#F5D0FF" stroke-width="1.4" stroke-linecap="round" opacity="0.7"/>'
-    '<ellipse cx="32" cy="36" rx="2.8" ry="12" fill="#1A1233" stroke="#EDE7FF" stroke-width="1.2"/>'
-    '<path d="M31 25 C29 20, 26 17, 23 16 M33 25 C35 20, 38 17, 41 16" stroke="#EDE7FF" stroke-width="1.3" fill="none" stroke-linecap="round"/>'
+    '<path d="M31 35 C22 38, 15 47, 21 51 C27 54, 30 44, 31.5 39 Z" fill="#3D7CF0"/>'
+    '<path d="M33 35 C42 38, 49 47, 43 51 C37 54, 34 44, 32.5 39 Z" fill="#3D7CF0"/>'
+    '<path d="M14 25 L24 28 M50 25 L40 28" stroke="#D0ECFF" stroke-width="1.4" stroke-linecap="round" opacity="0.7"/>'
+    '<ellipse cx="32" cy="36" rx="2.8" ry="12" fill="#0B1633" stroke="#E6F0FF" stroke-width="1.2"/>'
+    '<path d="M31 25 C29 20, 26 17, 23 16 M33 25 C35 20, 38 17, 41 16" stroke="#E6F0FF" stroke-width="1.3" fill="none" stroke-linecap="round"/>'
     '</svg>'
 )
 
@@ -47,10 +47,10 @@ RED, ORANGE, YELLOW, GREEN = "#FF4D6D", "#FF9F43", "#FFD166", "#3FB950"
 HONEYPOT_LOCATION = (36.67, -78.39)  # Azure East US (Virginia). Change this to your honeypot's Azure region.
 SEVERITY_ORDER = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
 # Neon colors: (glow, text) for each severity, and glow colors for signals and statuses
-SEVERITY_STYLE = {"Critical": ("#C77DFF", "#E7C6FF"), "High": ("#FF2E63", "#FF9DB3"),
-                  "Medium": ("#FF9F43", "#FFCB94"), "Low": ("#FFE66D", "#FFF3B0")}
+SEVERITY_STYLE = {"Critical": ("#FF2E63", "#FF9DB3"), "High": ("#FF7A2E", "#FFC1A0"),
+                  "Medium": ("#FFB020", "#FFDD99"), "Low": ("#FFE66D", "#FFF3B0")}
 SIGNAL_COLOR = {"danger": "#FF2E63", "warning": "#FF9F43", "ok": "#39FF88", "info": "#4DD7FF"}
-NEON_GREEN, NEON_RED, NEON_GRAY = "#39FF88", "#FF2E63", "#6E6A86"
+NEON_GREEN, NEON_RED, NEON_GRAY = "#39FF88", "#FF2E63", "#66758C"
 
 
 def esc(value):
@@ -80,48 +80,48 @@ def html_table(headers, rows, height=None):
     st.markdown(f'<div class="siem-table-wrap"{style}><table class="siem-table"><thead><tr>{head}</tr></thead>'
                 f'<tbody>{body}</tbody></table></div>', unsafe_allow_html=True)
 
-# Night-sky theme to match the globe: deep space background, stars, purple glow
+# Night-sky theme to match the globe: deep space background, stars, blue glow
 STARS = "https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png"
 st.markdown(f"""
 <style>
-/* Whole app: stars with soft purple nebula glows */
+/* Whole app: stars with soft blue nebula glows */
 .stApp, [data-testid="stAppViewContainer"] {{
   background:
-    radial-gradient(ellipse 60% 45% at 15% 0%, rgba(123,92,255,0.20), transparent 70%),
-    radial-gradient(ellipse 50% 40% at 95% 100%, rgba(215,120,255,0.13), transparent 70%),
-    linear-gradient(rgba(5,4,14,0.78), rgba(5,4,14,0.78)),
+    radial-gradient(ellipse 60% 45% at 15% 0%, rgba(56,132,255,0.20), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 95% 100%, rgba(0,200,255,0.13), transparent 70%),
+    linear-gradient(rgba(3,6,14,0.78), rgba(3,6,14,0.78)),
     url("{STARS}") center / cover fixed,
-    #05040E;
+    #03060E;
 }}
 [data-testid="stHeader"] {{background: transparent;}}
 [data-testid="stSidebar"] {{
-  background: rgba(13,10,30,0.82); backdrop-filter: blur(8px);
-  border-right: 1px solid rgba(157,123,255,0.20);
+  background: rgba(8,14,30,0.82); backdrop-filter: blur(8px);
+  border-right: 1px solid rgba(77,159,255,0.20);
 }}
 .block-container {{padding-top: 1.5rem; padding-bottom: 2rem;}}
 h1, h2, h3 {{letter-spacing: 0.01em;}}
-h1 {{background: linear-gradient(90deg, #FFFFFF, #C9B6FF); -webkit-background-clip: text; color: transparent !important;}}
+h1 {{background: linear-gradient(90deg, #FFFFFF, #A9D1FF); -webkit-background-clip: text; color: transparent !important;}}
 textarea, code, pre {{font-family: "SF Mono", Menlo, Consolas, monospace !important;}}
 
-/* Cards, tables, inputs: dark glass with purple edges */
+/* Cards, tables, inputs: dark glass with blue edges */
 [data-testid="stMetric"] {{
-  background: rgba(20,16,42,0.65); border: 1px solid rgba(157,123,255,0.22) !important;
-  border-radius: 10px; box-shadow: 0 0 18px rgba(123,92,255,0.08);
+  background: rgba(12,22,42,0.65); border: 1px solid rgba(77,159,255,0.22) !important;
+  border-radius: 10px; box-shadow: 0 0 18px rgba(56,132,255,0.08);
 }}
-[data-testid="stMetricValue"] {{color: #EDE7FF;}}
+[data-testid="stMetricValue"] {{color: #E6F0FF;}}
 [data-testid="stDataFrame"], [data-testid="stExpander"], [data-testid="stFileUploaderDropzone"],
 [data-testid="stTextArea"] textarea, [data-testid="stTextInput"] input {{
-  border-color: rgba(157,123,255,0.22) !important; border-radius: 8px;
+  border-color: rgba(77,159,255,0.22) !important; border-radius: 8px;
 }}
-[data-testid="stExpander"] details {{background: rgba(20,16,42,0.55); border-color: rgba(157,123,255,0.22);}}
-iframe {{border-radius: 10px; box-shadow: 0 0 30px rgba(123,92,255,0.18);}}
+[data-testid="stExpander"] details {{background: rgba(12,22,42,0.55); border-color: rgba(77,159,255,0.22);}}
+iframe {{border-radius: 10px; box-shadow: 0 0 30px rgba(56,132,255,0.18);}}
 
 /* Status bar */
 .statusbar {{display: flex; flex-wrap: wrap; gap: 1.4rem; align-items: center; font-family: "SF Mono", Menlo, monospace;
-  font-size: 0.78rem; padding: 0.5rem 0.9rem; border: 1px solid rgba(157,123,255,0.25); border-radius: 8px;
-  margin-bottom: 1rem; background: rgba(20,16,42,0.6);}}
+  font-size: 0.78rem; padding: 0.5rem 0.9rem; border: 1px solid rgba(77,159,255,0.25); border-radius: 8px;
+  margin-bottom: 1rem; background: rgba(12,22,42,0.6);}}
 .statusbar .ok {{color: #3FB950;}} .statusbar .bad {{color: #FF4D6D;}} .statusbar .warn {{color: #FFB347;}}
-.statusbar .dim {{color: #9E95C4;}}
+.statusbar .dim {{color: #8FA6C8;}}
 
 /* Neon indicators */
 .neon {{display: inline-block; border-radius: 50%; background: var(--c); flex: none;
@@ -134,36 +134,36 @@ iframe {{border-radius: 10px; box-shadow: 0 0 30px rgba(123,92,255,0.18);}}
 .signal {{display: flex; align-items: baseline; gap: 10px; margin: 7px 0;}}
 .signal .neon {{position: relative; top: -1px;}}
 .brand {{display: flex; align-items: center; gap: 12px; margin: 0.2rem 0 0.6rem;}}
-.brand svg {{filter: drop-shadow(0 0 6px rgba(199,125,255,0.85)) drop-shadow(0 0 14px rgba(157,123,255,0.5));
+.brand svg {{filter: drop-shadow(0 0 6px rgba(77,168,255,0.85)) drop-shadow(0 0 14px rgba(77,159,255,0.5));
   animation: mothglow 3s ease-in-out infinite;}}
 @keyframes mothglow {{0%, 100% {{opacity: 1;}} 50% {{opacity: 0.72;}}}}
-.brand-name {{font-weight: 800; font-size: 1.2rem; letter-spacing: 0.18em; color: #EDE7FF;
-  text-shadow: 0 0 12px rgba(157,123,255,0.7);}}
-.brand-tag {{font-size: 0.68rem; letter-spacing: 0.06em; color: #A99BD6; margin-top: 2px;}}
+.brand-name {{font-weight: 800; font-size: 1.2rem; letter-spacing: 0.18em; color: #E6F0FF;
+  text-shadow: 0 0 12px rgba(77,159,255,0.7);}}
+.brand-tag {{font-size: 0.68rem; letter-spacing: 0.06em; color: #8FB0DB; margin-top: 2px;}}
 
 /* Severity count cards */
 .sevcards {{display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 1rem;}}
 .sevcard {{display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 10px;
-  background: rgba(20,16,42,0.65); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+  background: rgba(12,22,42,0.65); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
   box-shadow: 0 0 18px color-mix(in srgb, var(--c) 16%, transparent), inset 0 0 14px color-mix(in srgb, var(--c) 8%, transparent);}}
 .sevcard-label {{font: 600 0.72rem "SF Mono", Menlo, monospace; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--c); text-shadow: 0 0 8px var(--c);}}
-.sevcard-num {{font-size: 1.8rem; font-weight: 600; color: #F3EEFF; line-height: 1.15;}}
+.sevcard-num {{font-size: 1.8rem; font-weight: 600; color: #EEF5FF; line-height: 1.15;}}
 
 /* SIEM tables */
-.siem-table-wrap {{overflow: auto; border: 1px solid rgba(157,123,255,0.22); border-radius: 10px;
-  background: rgba(20,16,42,0.55); margin-bottom: 0.8rem;}}
+.siem-table-wrap {{overflow: auto; border: 1px solid rgba(77,159,255,0.22); border-radius: 10px;
+  background: rgba(12,22,42,0.55); margin-bottom: 0.8rem;}}
 .siem-table {{width: 100%; border-collapse: collapse; font-size: 0.84rem;}}
-.siem-table th {{position: sticky; top: 0; z-index: 1; background: rgba(24,19,50,0.98); color: #B8AEE0; text-align: left;
+.siem-table th {{position: sticky; top: 0; z-index: 1; background: rgba(14,26,50,0.98); color: #A3BEE3; text-align: left;
   font: 600 0.7rem "SF Mono", Menlo, monospace; letter-spacing: 0.07em; text-transform: uppercase; padding: 10px 12px;
-  border-bottom: 1px solid rgba(157,123,255,0.25);}}
-.siem-table td {{padding: 8px 12px; border-bottom: 1px solid rgba(157,123,255,0.08); color: #E3DDFB; vertical-align: middle;}}
-.siem-table tr:hover td {{background: rgba(157,123,255,0.07);}}
-.siem-table td.mono {{font-family: "SF Mono", Menlo, monospace; font-size: 0.8rem; color: #CFC6FF; white-space: nowrap;}}
-.siem-table td.dim {{color: #9E95C4; white-space: nowrap;}}
+  border-bottom: 1px solid rgba(77,159,255,0.25);}}
+.siem-table td {{padding: 8px 12px; border-bottom: 1px solid rgba(77,159,255,0.08); color: #DDE8FB; vertical-align: middle;}}
+.siem-table tr:hover td {{background: rgba(77,159,255,0.07);}}
+.siem-table td.mono {{font-family: "SF Mono", Menlo, monospace; font-size: 0.8rem; color: #C2DCFF; white-space: nowrap;}}
+.siem-table td.dim {{color: #8FA6C8; white-space: nowrap;}}
 .siem-table td.nowrap {{white-space: nowrap;}}
 .siem-table td.clip {{max-width: 460px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}}
-.siem-table a {{color: #B79CFF;}}
+.siem-table a {{color: #7CC0FF;}}
 .statusbar .ok, .statusbar .bad, .statusbar .warn {{text-shadow: 0 0 8px currentColor;}}
 
 /* Investigate verdict banner */
@@ -522,7 +522,7 @@ US_STATES = {
     "Virginia": "VA", "Washington": "WA", "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY",
 }
 CHART_LAYOUT = dict(margin=dict(l=0, r=0, t=10, b=0), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                    font=dict(color="#CFC8EE"))
+                    font=dict(color="#C5D5EE"))
 
 
 def bar_chart(series, label, height=400):
@@ -575,7 +575,7 @@ with st.sidebar:
         st.rerun()
     keys = {"AbuseIPDB": feeds.get_secret("ABUSEIPDB_API_KEY"), "IPQualityScore": feeds.get_secret("IPQS_API_KEY"),
             "data.gov": feeds.get_secret("DATA_GOV_API_KEY"), "Ransomware.live": feeds.get_secret("RANSOMWARE_LIVE_API_KEY")}
-    st.markdown('<div style="font-size:0.8rem;color:#9E95C4;line-height:2">Optional API keys<br>' + "<br>".join(
+    st.markdown('<div style="font-size:0.8rem;color:#8FA6C8;line-height:2">Optional API keys<br>' + "<br>".join(
         status_badge(name, NEON_GREEN if k else NEON_GRAY) for name, k in keys.items()) + "</div>",
         unsafe_allow_html=True)
 

@@ -21,8 +21,8 @@ TEMPLATE = """
     <button id="zin" style="__BTN__">＋</button>
     <button id="zout" style="__BTN__">－</button>
   </div>
-  <div id="layers" style="position:absolute;right:12px;top:10px;color:#ECE8FF;font:12px -apple-system,Segoe UI,sans-serif;
-              background:rgba(20,16,42,0.8);border:1px solid rgba(157,123,255,0.3);border-radius:8px;padding:8px 12px;
+  <div id="layers" style="position:absolute;right:12px;top:10px;color:#E8F1FF;font:12px -apple-system,Segoe UI,sans-serif;
+              background:rgba(12,22,42,0.8);border:1px solid rgba(77,159,255,0.3);border-radius:8px;padding:8px 12px;
               line-height:1.9;max-width:230px">__LEGEND__</div>
   <div id="err" style="display:none;position:absolute;inset:0;color:#8B949E;font:14px sans-serif;
               align-items:center;justify-content:center">The 3D globe needs WebGL and an internet connection.</div>
@@ -35,7 +35,7 @@ try {
   const globe = Globe()(el)
     .width(document.getElementById("wrap").clientWidth || 800).height(__H__)
     .backgroundImageUrl("__IMG__night-sky.png")       // star field
-    .showAtmosphere(true).atmosphereColor("#7B6CFF").atmosphereAltitude(0.13)
+    .showAtmosphere(true).atmosphereColor("#3D8BFF").atmosphereAltitude(0.13)
     .pointLat("lat").pointLng("lng").pointColor("color").pointAltitude("alt").pointRadius("r")
     .pointLabel("label").pointsMerge(false)
     .ringLat("lat").ringLng("lng").ringColor(r => t => `rgba(${r.rgb},${1 - t})`).ringMaxRadius("max")
@@ -59,7 +59,7 @@ try {
       `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap">
          <input type="checkbox" data-i="${i}" ${l.on ? "checked" : ""} style="accent-color:${l.color};margin:0">
          <span style="color:${l.color}">●</span> ${l.name}
-         <span style="color:#9E95C4;margin-left:auto;padding-left:8px">${l.count}</span></label>`).join("");
+         <span style="color:#8FA6C8;margin-left:auto;padding-left:8px">${l.count}</span></label>`).join("");
     panel.querySelectorAll("input").forEach(box => box.onchange = () => {
       layers[box.dataset.i].on = box.checked;
       refresh();
@@ -69,10 +69,10 @@ try {
   if (layers.length <= 1 && !panel.textContent.trim()) panel.style.display = "none";
   refresh();
 
-  // Purple night look. We recolor NASA's "Black Marble" city-lights image pixel by pixel:
-  // dark areas become slate, dim lights violet, brighter lights magenta, the brightest pink-white.
-  const RAMP = [[0, [24, 25, 36]], [0.1, [30, 30, 44]], [0.2, [72, 44, 132]],
-                [0.4, [172, 72, 204]], [0.65, [245, 122, 172]], [1, [255, 232, 212]]];
+  // Blue night look. We recolor NASA's "Black Marble" city-lights image pixel by pixel:
+  // dark areas become navy slate, dim lights deep blue, brighter lights azure, the brightest icy white.
+  const RAMP = [[0, [14, 20, 34]], [0.1, [18, 26, 44]], [0.2, [28, 58, 128]],
+                [0.4, [38, 118, 220]], [0.65, [92, 190, 255]], [1, [226, 246, 255]]];
   const ramp = L => {
     for (let k = 1; k < RAMP.length; k++) {
       const [x1, c1] = RAMP[k - 1], [x2, c2] = RAMP[k];
@@ -84,7 +84,7 @@ try {
     return RAMP[RAMP.length - 1][1];
   };
   const material = globe.globeMaterial();
-  material.color.set("#1E2030");  // plain slate until the image is ready
+  material.color.set("#141E30");  // plain slate until the image is ready
   material.shininess = 0;
   const img = new Image();
   img.crossOrigin = "anonymous";
@@ -127,8 +127,8 @@ try {
   const heatOn = () => heatLayer && heatLayer.on;
   const capColor = f => {
     const t = heatOn() ? intensity(f) : 0;
-    if (!t) return "rgba(8,7,22,0.3)";
-    const c = [120 + 135 * t, 70 - 24 * t, 220 - 100 * t];  // violet -> hot pink
+    if (!t) return "rgba(5,10,22,0.3)";
+    const c = [60 + 195 * t, 140 - 80 * t, 255 - 175 * t];  // blue -> red
     return `rgba(${c.map(Math.round).join(",")},${(0.28 + 0.42 * t).toFixed(2)})`;
   };
   const polyLabel = f => {
@@ -136,15 +136,15 @@ try {
     if (!h || !heatOn()) return f.properties.NAME;
     const rows = Object.entries(h.groups).sort((a, b) => b[1] - a[1]).slice(0, 5)
       .map(([g, n]) => `${g}: ${n.toLocaleString()}`).join("<br>");
-    return `<div style="background:rgba(20,16,42,0.94);border:1px solid rgba(157,123,255,0.3);border-radius:6px;
+    return `<div style="background:rgba(12,22,42,0.94);border:1px solid rgba(77,159,255,0.3);border-radius:6px;
       padding:6px 9px;font:12px -apple-system,sans-serif;color:#E6EDF3"><b>${f.properties.NAME}</b><br>
-      ${h.total.toLocaleString()} malicious IPs<br><span style="color:#B8AEE0">${rows}</span></div>`;
+      ${h.total.toLocaleString()} malicious IPs<br><span style="color:#A3BEE3">${rows}</span></div>`;
   };
   let countries = [];
   const drawCountries = () => globe.polygonsData(countries)
       .polygonCapColor(capColor)
-      .polygonSideColor(() => "rgba(157,123,255,0.08)")
-      .polygonStrokeColor(() => "rgba(196,170,255,0.22)")
+      .polygonSideColor(() => "rgba(77,159,255,0.08)")
+      .polygonStrokeColor(() => "rgba(150,200,255,0.22)")
       .polygonAltitude(f => 0.003 + (heatOn() ? 0.025 * intensity(f) : 0))
       .polygonLabel(polyLabel)
       .polygonsTransitionDuration(400);
@@ -179,7 +179,7 @@ try {
 </script>
 """
 
-BUTTON_STYLE = ("background:rgba(20,16,42,0.85);color:#E6EDF3;border:1px solid rgba(157,123,255,0.3);"
+BUTTON_STYLE = ("background:rgba(12,22,42,0.85);color:#E6EDF3;border:1px solid rgba(77,159,255,0.3);"
                 "border-radius:6px;padding:5px 10px;cursor:pointer")
 
 
@@ -195,7 +195,7 @@ def severity_color(value, high, medium):
 def label(*lines):
     """Hover tooltip. Everything is escaped so feed data can't inject HTML."""
     body = "<br>".join(html.escape(str(line)) for line in lines if line not in (None, ""))
-    return (f'<div style="background:rgba(20,16,42,0.94);border:1px solid rgba(157,123,255,0.3);border-radius:6px;'
+    return (f'<div style="background:rgba(12,22,42,0.94);border:1px solid rgba(77,159,255,0.3);border-radius:6px;'
             f'padding:6px 9px;font:12px -apple-system,sans-serif;color:#E6EDF3">{body}</div>')
 
 
@@ -218,8 +218,8 @@ def render(points, rings=None, arcs=None, center=(25, -40), legend="", height=56
 # -----------------------------------------------------------------------------
 # Ready-made globes for each map
 # -----------------------------------------------------------------------------
-LEGEND_SEVERITY = ('<span style="color:#FF4D6D">●</span> High &nbsp; <span style="color:#FF9F43">●</span> Medium'
-                   ' &nbsp; <span style="color:#FFD166">●</span> Low')
+LEGEND_SEVERITY = ('<span style="color:#FF2E63">●</span> Critical &nbsp; <span style="color:#FF7A2E">●</span> High'
+                   ' &nbsp; <span style="color:#FFB020">●</span> Medium &nbsp; <span style="color:#FFE66D">●</span> Low')
 
 
 def ip_globe(points_df, value_col, value_name, high, medium, center=(25, -40)):
@@ -294,10 +294,10 @@ def show_scam_call_globe(state_counts):
 # -----------------------------------------------------------------------------
 LAYER_COLORS = {
     "Botnet C2": "#FF2E63", "Brute force": "#FF9F43", "Web attacks": "#FFD166", "Spam & mail": "#F78FB3",
-    "Scanner": "#A3E635", "Tor exit": "#4DA3FF", "Blocklisted": "#C9B6FF", "Scam calls (US)": "#2EE6C5",
-    "Alerts": "#FFFFFF", "Honeypot attacks": "#FF5A8C", "Ransomware victims": "#FF6AD5",
+    "Scanner": "#A3E635", "Tor exit": "#4DA3FF", "Blocklisted": "#A9D1FF", "Scam calls (US)": "#2EE6C5",
+    "Alerts": "#FFFFFF", "Honeypot attacks": "#FF5A8C", "Ransomware victims": "#FF6B9D",
 }
-SEVERITY_RGB = {"Critical": "178,102,255", "High": "255,46,99", "Medium": "255,159,67", "Low": "255,209,102"}
+SEVERITY_RGB = {"Critical": "255,46,99", "High": "255,122,46", "Medium": "255,176,32", "Low": "255,230,109"}
 SEVERITY_SIZE = {"Critical": 7, "High": 5.5, "Medium": 4, "Low": 3}
 
 
@@ -311,7 +311,7 @@ def threat_globe(ips, state_counts=None, alerts=None, honeypot_points=None, hone
         heat = {str(code): {"total": int(totals[code]),
                             "groups": {g: int(n) for g, n in row.items() if n}}
                 for code, row in country_heat.iterrows()}
-        layers.append({"name": "Country heat", "color": "#B266FF", "on": True, "count": int(totals.sum()),
+        layers.append({"name": "Country heat", "color": "#3D8BFF", "on": True, "count": int(totals.sum()),
                        "heat": True, "points": []})
     if ips is not None and not ips.empty:
         top = ips["risk"].max() or 1
