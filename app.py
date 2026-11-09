@@ -775,14 +775,21 @@ def page_overview():
 
     st.subheader("Threat globe")
     with st.spinner("Locating threats..."):
+        # Honeypot attackers first: the free geolocation quota is per minute, and these matter most
+        honeypot_points = None
+        if honeypot is not None and not honeypot.empty:
+            hp_counts = honeypot["ip"].value_counts().rename_axis("ip").reset_index(name="attempts").head(300)
+            located = feeds.geolocate(tuple(hp_counts["ip"]), max_requests=3)
+            hp = hp_counts.merge(located[["ip", "lat", "lon"]], on="ip", how="left") if not located.empty \
+                else hp_counts.assign(lat=None, lon=None)
+            # Not located yet? Put it at its registered country for now
+            countries = feeds.countries_for(hp["ip"], data["ip_country"]).values
+            for i in hp.index[hp["lat"].isna()]:
+                hp.at[i, "lat"], hp.at[i, "lon"] = globe3d.country_point(countries[i], hp.at[i, "ip"])
+            honeypot_points = hp.dropna(subset=["lat", "lon"])
         points = map_ips(threat_ips, intel)
         calls = data["scam_calls"]
         state_counts = calls["state"].map(US_STATES).value_counts() if calls is not None and not calls.empty else None
-        honeypot_points = None
-        if honeypot is not None and not honeypot.empty:
-            hp_counts = honeypot["ip"].value_counts().rename_axis("ip").reset_index(name="attempts")
-            located = feeds.geolocate(tuple(hp_counts["ip"].head(300)))
-            honeypot_points = hp_counts.merge(located, on="ip") if not located.empty else None
         if data["top_attacking_subnets"] is not None:
             feeds.geolocate(tuple(data["top_attacking_subnets"]["start_ip"]))
         live_alerts = build_alerts(data, intel, honeypot)  # again, now that more IPs have locations
