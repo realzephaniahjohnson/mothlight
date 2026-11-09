@@ -1,58 +1,117 @@
-# Mothlight
+<div align="center">
 
-*They always come to the light.*
+<img src="assets/banner.svg" alt="Mothlight — They always come to the light" width="100%">
 
-**Mothlight** is an OSINT threat intelligence SIEM with a live SSH honeypot, built with Python and Streamlit. It pulls free open-source intelligence (OSINT) feeds into one place, raises alerts from detection rules, and lets you hunt through everything with **KQL, SPL, or SQL**. You can also investigate any IP, CVE, email address, phone number, or domain.
+<br>
 
-**Live demo:** https://mothlight.streamlit.app
+<a href="https://mothlight.streamlit.app"><img src="https://img.shields.io/badge/Live_demo-mothlight.streamlit.app-4D9FFF?style=for-the-badge&logo=streamlit&logoColor=white&labelColor=0B1633" alt="Live demo"></a>
+<a href="https://github.com/realzephaniahjohnson/mothlight-honeypot-data"><img src="https://img.shields.io/badge/Honeypot-LIVE-22D3EE?style=for-the-badge&logo=linux&logoColor=white&labelColor=0B1633" alt="Live honeypot"></a>
 
-**Built by** Zephaniah Johnson, Zakari Gilmer, and Bofelo Gaeonale.
+<img src="https://img.shields.io/badge/Python-3.14-3D7CF0?style=flat-square&logo=python&logoColor=white&labelColor=0B1633" alt="Python">
+<img src="https://img.shields.io/badge/Streamlit-app-3D7CF0?style=flat-square&logo=streamlit&logoColor=white&labelColor=0B1633" alt="Streamlit">
+<img src="https://img.shields.io/badge/WebGL-globe.gl-3D7CF0?style=flat-square&logo=threedotjs&logoColor=white&labelColor=0B1633" alt="globe.gl">
+<img src="https://img.shields.io/badge/Cowrie-SSH_honeypot-3D7CF0?style=flat-square&logo=gnubash&logoColor=white&labelColor=0B1633" alt="Cowrie">
+<img src="https://img.shields.io/badge/Oracle_Cloud-Montreal-3D7CF0?style=flat-square&logo=oracle&logoColor=white&labelColor=0B1633" alt="Oracle Cloud">
+<img src="https://img.shields.io/badge/Tailscale-admin_only-3D7CF0?style=flat-square&logo=tailscale&logoColor=white&labelColor=0B1633" alt="Tailscale">
 
-## Features
+<img src="https://img.shields.io/badge/threat_feeds-19-4D9FFF?style=flat-square&labelColor=0B1633" alt="19 feeds">
+<img src="https://img.shields.io/badge/detection_rules-24-4D9FFF?style=flat-square&labelColor=0B1633" alt="24 rules">
+<img src="https://img.shields.io/badge/hunt_with-KQL_·_SPL_·_SQL-4D9FFF?style=flat-square&labelColor=0B1633" alt="KQL SPL SQL">
+<img src="https://img.shields.io/badge/API_keys_needed-none-4D9FFF?style=flat-square&labelColor=0B1633" alt="No keys needed">
 
-| Page | What it does |
-|---|---|
-| **Overview** | KPIs, a 3D night-side threat globe (countries glowing by how many malicious IPs they host, sample IPs by attack type, US scam calls, alerts as pulsing rings, honeypot attack arcs, each a toggleable layer), alert queue, live feed tables |
-| **Alerts** | Detections from 24 rules across 4 severities (Critical, High, Medium, Low), filterable by severity and source |
-| **Search** | Query console for KQL (Microsoft Sentinel), SPL (Splunk), or SQL, with an event timeline, schema browser, example queries, and CSV export |
-| **Investigate** | One box for any indicator. Auto-detects IPs, CVEs, emails, phone numbers, and domains, then returns a verdict, risk score, and evidence |
-| **Honeypot** | Live SSH attacks on our Cowrie honeypot, updated every 5 minutes: attackers on a map, attacks per hour, and the usernames, passwords, and commands they tried |
-| **Connectors** | Health, record counts, and refresh status for every data source |
+**[Live demo](https://mothlight.streamlit.app)** · **[Features](#-features)** · **[Live honeypot](#-live-honeypot)** · **[Detections](#-detection-rules)** · **[Data sources](#-data-sources)** · **[Team](#-team)**
 
-### Query engine
+</div>
 
-KQL and SPL queries are translated into SQL and run against an in-memory SQLite database, so you can see the translated SQL for every search. The console is sandboxed: every query runs on a private read-only copy, only `SELECT` is allowed, and queries are cancelled after 10 seconds.
+---
 
-### Detection rules
+**Mothlight** is an OSINT threat intelligence SIEM with its own live SSH honeypot. It pulls 19 free threat feeds into one
+place, raises alerts from 24 detection rules, maps everything on a 3D threat globe, and lets you hunt with **KQL**,
+**SPL**, or **SQL**. Drop in any IP, CVE, email, phone number, or domain and it returns a verdict with the evidence.
+
+<p align="center"><img src="assets/globe.jpg" alt="Mothlight threat globe" width="100%"></p>
+
+## ✨ Features
+
+| | Page | What it does |
+|:-:|---|---|
+| 🌍 | **Overview** | KPIs and a 3D night-side threat globe: countries glow by how many malicious IPs they host, with malicious IPs by attack type, ransomware victims, US scam calls, pulsing alert rings, and live honeypot attack arcs |
+| 🚨 | **Alerts** | Detections from 24 rules across 4 severities, filterable by severity and source |
+| 🔎 | **Search** | Hunt in KQL (Microsoft Sentinel), SPL (Splunk), or SQL, with the translated SQL shown, an event timeline, a schema browser, and CSV export |
+| 🕵️ | **Investigate** | One box for any indicator: auto-detects IPs, CVEs, emails, phone numbers, and domains, then returns a verdict, risk score, and evidence |
+| 🍯 | **Honeypot** | Real SSH attacks on our Cowrie honeypot, updated every 5 minutes: attackers on a map, attacks per hour, and the usernames, passwords, and commands they tried |
+| 🔌 | **Connectors** | Health, record counts, and refresh status for every data source |
+
+<table>
+<tr>
+<td width="50%"><img src="assets/alerts.jpg" alt="Alert queue"><p align="center"><sub>Alert queue with neon severity cards</sub></p></td>
+<td width="50%"><img src="assets/honeypot.jpg" alt="Live honeypot"><p align="center"><sub>Live honeypot: real attackers, updated every 5 minutes</sub></p></td>
+</tr>
+</table>
+
+### 🧠 Query engine
+
+KQL and SPL are translated into SQL and run on an in-memory SQLite database, and the translated SQL is shown for every
+search. Every query runs on a private read-only copy: only `SELECT` is allowed, attached databases and writes are
+blocked, results are size-capped, and queries are cancelled after 10 seconds.
+
+### 📞 Phone and email checks
+
+These are **reputation checks**: they show whether a number, address, or domain is linked to scams, spam, or phishing,
+not who owns it.
+
+- **Phone:** FTC scam and robocall reports, validity, line type (VoIP, toll-free, premium rate), region, fraud score
+- **Email / domain:** live phishing hosting, disposable providers, brand-impersonation lookalikes, domain age, MX/SPF/DMARC records, fraud score
+
+## 🍯 Live honeypot
+
+Mothlight shows live attacks on our own [Cowrie](https://github.com/cowrie/cowrie) SSH honeypot, a fake server on an
+Oracle Cloud VM in Montreal that exists only to be attacked.
+
+```mermaid
+flowchart LR
+    A["🌐 Attackers"] -->|"SSH on port 22"| B["🍯 Cowrie<br/>fake shell"]
+    B --> C["cowrie.json"]
+    C -->|"every 5 min · unprivileged user"| D["export_cowrie.py<br/>sanitize + cap"]
+    D -->|"deploy key, one repo only"| E[("mothlight-honeypot-data<br/>honeypot.csv")]
+    E -->|"every 5 min, with failover"| F["🦋 Mothlight<br/>page · globe · alerts · search"]
+    G["🔐 Admin"] -.->|"Tailscale only"| B
+```
+
+- **Least privilege:** the exporter runs as its own user with a key that can only write to the data repo.
+- **Nothing private leaks:** private IPs, our own addresses, and server details are stripped before publishing.
+- **Untrusted by default:** everything in the data was typed by attackers, so it's size-capped, validated, and only shown escaped.
+- **No public admin door:** the real SSH port is reachable only over Tailscale.
+- **Raw data is public:** [mothlight-honeypot-data](https://github.com/realzephaniahjohnson/mothlight-honeypot-data).
+
+## 🚨 Detection rules
 
 | Severity | Rule |
 |---|---|
-| Critical | Ransomware-linked CVE added to CISA KEV in the last 7 days |
-| Critical | Botnet command-and-control server attacked the honeypot |
-| High | Ransomware-linked CVE added in the last 30 days |
-| High | Exploited CVE in a widely used product (Fortinet, Ivanti, Cisco, Microsoft...) in the last 14 days |
-| High | Botnet C2 server is online |
-| High | IP on 8+ public blocklists |
-| High | Phishing site impersonating a bank, crypto exchange, PayPal, or the IRS |
-| High | Scam number with a large spike in FTC reports |
-| High | IP on 5+ blocklists attacked the honeypot |
-| Medium | Any other CVE added in the last 14 days |
-| Medium | Attacker seen doing 3+ kinds of attacks |
-| Medium | Phishing site impersonating any other major brand (lookalike detection) |
-| Medium | Mass-reported scam number |
-| Medium | 100+ attempts from one IP against the honeypot |
-| Low | CVE added 15 to 30 days ago |
-| Low | Tor exit node with abuse reports, or attacking the honeypot |
-| Low | Phishing page hosted on a free platform (Vercel, GitHub Pages, Netlify...) |
+| 🔴 **Critical** | Ransomware-linked CVE added to CISA KEV in the last 7 days |
+| 🔴 **Critical** | Botnet command-and-control server attacked the honeypot |
+| 🟠 **High** | Ransomware-linked CVE added in the last 30 days |
+| 🟠 **High** | Exploited CVE in a widely used product (Fortinet, Ivanti, Cisco, Microsoft...) in the last 14 days |
+| 🟠 **High** | Botnet C2 server is online |
+| 🟠 **High** | IP on 8+ public blocklists |
+| 🟠 **High** | Phishing site impersonating a bank, crypto exchange, PayPal, or the IRS |
+| 🟠 **High** | Scam number with a large spike in FTC reports |
+| 🟠 **High** | IP on 5+ blocklists attacked the honeypot |
+| 🟡 **Medium** | Any other CVE added in the last 14 days |
+| 🟡 **Medium** | Attacker seen doing 3+ kinds of attacks |
+| 🟡 **Medium** | Phishing site impersonating any other major brand (lookalike detection) |
+| 🟡 **Medium** | Mass-reported scam number |
+| 🟡 **Medium** | 100+ attempts from one IP against the honeypot |
+| ⚪ **Low** | CVE added 15 to 30 days ago |
+| ⚪ **Low** | Tor exit node with abuse reports, or attacking the honeypot |
+| ⚪ **Low** | Phishing page hosted on a free platform (Vercel, GitHub Pages, Netlify...) |
 
-### Phone and email checks
+## 📡 Data sources
 
-These are **reputation checks**. They show whether a number, address, or domain is linked to scams, spam, or phishing, not who owns it.
+<details>
+<summary><b>19 feeds and 6 enrichment services</b> (click to expand)</summary>
 
-- **Phone:** FTC scam and robocall reports, validity, line type (VoIP, toll-free, premium rate), region, optional IPQualityScore fraud score
-- **Email / domain:** live phishing hosting (OpenPhish), disposable providers, brand-impersonation lookalikes, domain age (RDAP), MX/SPF/DMARC records, optional IPQualityScore fraud score
-
-## Data sources
+<br>
 
 | Source | Table | What it provides | Key |
 |---|---|---|---|
@@ -80,56 +139,43 @@ These are **reputation checks**. They show whether a number, address, or domain 
 | ip-api.com, Shodan InternetDB, Google DNS, RDAP | — | Enrichment in Investigate | No |
 | [AbuseIPDB](https://www.abuseipdb.com/), [IPQualityScore](https://www.ipqualityscore.com/) | — | Extra scores in Investigate | Optional, free |
 
-## Skills demonstrated
+</details>
 
-- Collecting and normalizing threat intelligence from multiple OSINT sources
-- Writing detection rules and triaging alerts by severity
-- Threat hunting with KQL and SPL, and translating both into SQL
-- IOC enrichment for IPs, domains, emails, and phone numbers
-- Phishing analysis: lookalike domains, domain age, email authentication (SPF/DMARC)
-- Running a live SSH honeypot (Cowrie on Oracle Cloud) and shipping its logs into the SIEM through a least-privilege pipeline
-- Correlating honeypot telemetry with external threat feeds
-- Secure design: sandboxed read-only query engine, API keys kept out of the repo
+## 🛡️ Security and privacy
 
-## Honeypot data
+- **No tracking:** no accounts, ads, analytics, or keystroke logging, and Streamlit usage stats are off.
+- **Keys stay server-side:** API keys never reach the browser and are redacted from every error message.
+- **Hardened:** rate limiting, a sandboxed read-only query engine, escaped output, upload limits, and spreadsheet-formula protection on exports.
+- **Policies:** full [Privacy Policy and Terms](https://mothlight.streamlit.app/privacy) on the site, and a [security policy](SECURITY.md) for reporting issues.
 
-Mothlight shows live attacks from our own [Cowrie](https://github.com/cowrie/cowrie) SSH honeypot running on an
-Oracle Cloud VM in Montreal. The pipeline:
+## 🎯 Skills demonstrated
 
-```
-attackers ──► Cowrie (fake SSH on port 22) ──► cowrie.json
-                                                  │  every 5 min (cron, unprivileged user)
-                                                  ▼
-                       honeypot/export_cowrie.py: keep login attempts, commands, downloads;
-                       drop private IPs and our own addresses; cap field length and row count
-                                                  │  deploy key that can only write to one repo
-                                                  ▼
-                       github.com/realzephaniahjohnson/mothlight-honeypot-data (honeypot.csv)
-                                                  │  Mothlight re-reads it every 5 minutes
-                                                  ▼
-                       Honeypot page, globe arcs, honeypot alert rules, `honeypot` search table
-```
+`Threat intelligence` `Detection engineering` `Alert triage` `KQL` `SPL` `SQL` `IOC enrichment` `Phishing analysis`
+`Honeypot operations` `Log pipelines` `Cloud (Oracle)` `Zero-trust admin (Tailscale)` `Secure coding` `Python`
 
-The real SSH port is only reachable over Tailscale, so nothing on the VM accepts admin logins from the internet.
-Everything in the data was typed by attackers, so Mothlight treats it as untrusted: it's size-capped, validated,
-and only shown in escaped tables. CSV exports neutralize spreadsheet formulas.
-
-## Project structure
+## 🗂️ Project structure
 
 ```
-app.py            # Pages, alerts, charts, and layout
-feeds.py          # Downloads, caches, and cleans each data feed
-query_engine.py   # KQL/SPL-to-SQL translator and sandboxed query runner
-checks.py         # Reputation checks for IPs, CVEs, emails, phone numbers, and domains
-globe3d.py        # 3D night-lights threat globe (globe.gl / WebGL)
-honeypot/         # Export job that runs on the honeypot VM
-.streamlit/       # Theme and server settings
+app.py            pages, alerts, charts, and layout
+feeds.py          downloads, caches, and cleans each data feed
+query_engine.py   KQL/SPL-to-SQL translator and sandboxed query runner
+checks.py         reputation checks for IPs, CVEs, emails, phones, and domains
+globe3d.py        3D night-lights threat globe (globe.gl / WebGL)
+legal.py          privacy policy and terms
+honeypot/         export job that runs on the honeypot VM
+assets/           logo, banner, and screenshots
 ```
 
-## Team
+## 👥 Team
 
-Mothlight was designed and built by:
+<div align="center">
 
-- **Zephaniah Johnson**
-- **Zakari Gilmer**
-- **Bofelo Gaeonale**
+<img src="assets/logo.svg" width="72" alt="Mothlight logo">
+
+**Designed and built by**
+
+**Zephaniah Johnson** · **Zakari Gilmer** · **Bofelo Gaeonale**
+
+<sub>🦋 They always come to the light.</sub>
+
+</div>
