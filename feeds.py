@@ -58,7 +58,7 @@ HEADERS = {"User-Agent": "Mothlight/1.0 (open-source threat intel SIEM)"}
 HONEYPOT_FILE = Path(__file__).parent / "honeypot.csv"
 HONEYPOT_REPO = "https://github.com/realzephaniahjohnson/mothlight-honeypot-data"
 HONEYPOT_LIVE_URL = "https://raw.githubusercontent.com/realzephaniahjohnson/mothlight-honeypot-data/main/honeypot.csv"
-HONEYPOT_MAX_BYTES = 20_000_000
+HONEYPOT_MAX_BYTES = 60_000_000
 HONEYPOT_EVENTS = {"login_failed", "login_success", "command", "download"}
 TIMEOUT = 30  # seconds to wait for a website before giving up
 
@@ -603,7 +603,8 @@ def _parse_honeypot(content):
                         "event": df["event"].str.strip()})
     for column in ("username", "password", "command"):
         out[column] = df[column].str.slice(0, 200) if column in df else ""
-    out = out[out["event"].isin(HONEYPOT_EVENTS) & out["ip"].apply(lambda x: detect_type(x) == "ip")]
+    valid_ips = {ip for ip in out["ip"].unique() if detect_type(ip) == "ip"}  # check each IP once, not every row
+    out = out[out["event"].isin(HONEYPOT_EVENTS) & out["ip"].isin(valid_ips)]
     return out.reset_index(drop=True)
 
 

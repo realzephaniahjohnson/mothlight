@@ -36,7 +36,7 @@ REMOTE = "git@github.com:realzephaniahjohnson/mothlight-honeypot-data.git"
 AUTHOR = ("Zephaniah Johnson", "311254405+realzephaniahjohnson@users.noreply.github.com")
 
 DAYS = 7               # how far back to export
-MAX_ROWS = 50_000      # newest rows kept if there are more
+MAX_ROWS = 300_000     # newest rows kept if there are more (~35 MB)
 MAX_FIELD = 200        # longest username/password/command kept
 COLUMNS = ["timestamp", "src_ip", "event", "username", "password", "command", "session"]
 EVENTS = {
