@@ -183,7 +183,7 @@ assets/           logo, banner, and screenshots
 
 **Designed and built by**
 
-**Zephaniah Johnson https://github.com/realzephaniahjohnson ** · **Zakari Gilmer** · **Bofelo Gaeonale https://github.com/godblessbofelo** 
+**Zephaniah Johnson https://github.com/realzephaniahjohnson** · **Zakari Gilmer** · **Bofelo Gaeonale https://github.com/godblessbofelo** 
 
 <sub>🦋 They always come to the light.</sub>
 
