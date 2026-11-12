@@ -5,6 +5,7 @@
 <br>
 
 <a href="https://mothlight.streamlit.app"><img src="https://img.shields.io/badge/Live_demo-mothlight.streamlit.app-4D9FFF?style=for-the-badge&logo=streamlit&logoColor=white&labelColor=0B1633" alt="Live demo"></a>
+<a href="#-features"><img src="https://img.shields.io/badge/New-Outage_tracker-FF9F43?style=for-the-badge&logo=icloud&logoColor=white&labelColor=0B1633" alt="New: outage tracker"></a>
 <a href="https://github.com/realzephaniahjohnson/mothlight-honeypot-data"><img src="https://img.shields.io/badge/Honeypot-LIVE-22D3EE?style=for-the-badge&logo=linux&logoColor=white&labelColor=0B1633" alt="Live honeypot"></a>
 
 <img src="https://img.shields.io/badge/Python-3.14-3D7CF0?style=flat-square&logo=python&logoColor=white&labelColor=0B1633" alt="Python">
@@ -14,7 +15,7 @@
 <img src="https://img.shields.io/badge/Oracle_Cloud-Montreal-3D7CF0?style=flat-square&logo=oracle&logoColor=white&labelColor=0B1633" alt="Oracle Cloud">
 <img src="https://img.shields.io/badge/Tailscale-admin_only-3D7CF0?style=flat-square&logo=tailscale&logoColor=white&labelColor=0B1633" alt="Tailscale">
 
-<img src="https://img.shields.io/badge/threat_feeds-19-4D9FFF?style=flat-square&labelColor=0B1633" alt="19 feeds">
+<img src="https://img.shields.io/badge/threat_feeds-20-4D9FFF?style=flat-square&labelColor=0B1633" alt="20 feeds">
 <img src="https://img.shields.io/badge/detection_rules-26-4D9FFF?style=flat-square&labelColor=0B1633" alt="26 rules">
 <img src="https://img.shields.io/badge/hunt_with-KQL_·_SPL_·_SQL-4D9FFF?style=flat-square&labelColor=0B1633" alt="KQL SPL SQL">
 <img src="https://img.shields.io/badge/API_keys_needed-none-4D9FFF?style=flat-square&labelColor=0B1633" alt="No keys needed">
@@ -25,9 +26,13 @@
 
 ---
 
-**Mothlight** is an OSINT threat intelligence SIEM with its own live SSH honeypot. It pulls 19 free threat feeds into one
+**Mothlight** is an OSINT threat intelligence SIEM with its own live SSH honeypot. It pulls 20 free threat feeds into one
 place, raises alerts from 26 detection rules, maps everything on a 3D threat globe, and lets you hunt with **KQL**,
 **SPL**, or **SQL**. Drop in any IP, CVE, email, phone number, or domain and it returns a verdict with the evidence.
+
+> 🆕 **New: Outages.** Mothlight now tracks major tech outages (Microsoft 365, AWS, Azure, Google Cloud, GitHub,
+> Cloudflare and more) from official status pages and live news coverage. See what's down right now, how bad it is,
+> how long it took to fix, and the root-cause report once it's out. Big outages also raise alerts.
 
 <p align="center"><img src="assets/globe.jpg" alt="Mothlight overview: live KPIs and the 3D threat globe with honeypot attack arcs" width="100%"></p>
 
@@ -155,7 +160,7 @@ flowchart LR
 ## 🎯 Skills demonstrated
 
 `Threat intelligence` `Detection engineering` `Alert triage` `KQL` `SPL` `SQL` `IOC enrichment` `Phishing analysis`
-`Honeypot operations` `Log pipelines` `Cloud (Oracle)` `Zero-trust admin (Tailscale)` `Secure coding` `Python`
+`Honeypot operations` `Outage monitoring` `Log pipelines` `Cloud (Oracle)` `Zero-trust admin (Tailscale)` `Secure coding` `Python`
 
 ## 🗂️ Project structure
 
