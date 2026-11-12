@@ -6,6 +6,7 @@
 #   Alerts        - every detection, filterable by severity
 #   Search        - query all data with KQL, SPL, or SQL
 #   Investigate   - check an IP, CVE, email, phone number, or domain
+#   Outages       - major tech outages (cloud, email, dev tools...)
 #   Honeypot      - attacks against our honeypot
 #   Connectors    - health of every data source
 
@@ -286,6 +287,8 @@ CONNECTORS = [
      "https://haveibeenpwned.com/PwnedWebsites"),
     ("scam_calls", "FTC Do Not Call", "Scam and robocall reports", feeds.get_ftc_complaints, "6 hours",
      "https://www.ftc.gov/policy-notices/open-government/data-sets/do-not-call-data"),
+    ("outages", "Status pages + BleepingComputer", "Major tech outages (AWS, Azure, Google Cloud, GitHub...)",
+     feeds.get_outages, "15 minutes", "https://www.githubstatus.com/api"),
     ("disposable_domains", "Disposable email domains", "Throwaway email providers", feeds.get_disposable_domains,
      "24 hours", feeds.DISPOSABLE_URL),
 ]
@@ -537,6 +540,14 @@ def build_alerts(data, intel, honeypot):
             big = r.accounts >= 1_000_000 or "Passwords" in r.data_exposed
             add("High" if big else "Medium", "New data breach disclosed", r.breach,
                 f"{r.accounts:,} accounts · {r.data_exposed}", r.added, "Have I Been Pwned")
+
+    # Major tech outages happening right now
+    outages = data["outages"]
+    if outages is not None and not outages.empty:
+        live = outages[~outages["status"].isin(["Resolved", "Reported"]) & outages["impact"].isin(["critical", "major"])]
+        for r in live.head(CAP).itertuples():
+            add("High" if r.impact == "critical" else "Medium", "Major tech outage in progress", r.provider,
+                f"{r.title} · {r.status}", r.started, "Outages")
 
     # Top attacking networks
     subnets = data["top_attacking_subnets"]
@@ -942,6 +953,7 @@ def page_alerts():
             "| " + sev_badge("High") + " | Ransomware victim in the US or a critical sector (healthcare, government, education, finance, energy) |\n"
             "| " + sev_badge("High") + " | New data breach with 1M+ accounts or exposed passwords |\n"
             "| " + sev_badge("High") + " | One of the top 3 attacking networks today (DShield) |\n"
+            "| " + sev_badge("High") + " | Critical outage in progress at a major tech provider |\n"
             "| " + sev_badge("Medium") + " | Any other CVE added in the last 14 days |\n"
             "| " + sev_badge("Medium") + " | Attacker seen doing 3+ kinds of attacks (blocklist.de) |\n"
             "| " + sev_badge("Medium") + " | Phishing site impersonating any other major brand |\n"
@@ -950,6 +962,7 @@ def page_alerts():
             "| " + sev_badge("Medium") + " | Any other new ransomware victim (last 7 days) |\n"
             "| " + sev_badge("Medium") + " | Any other new data breach (last 30 days) |\n"
             "| " + sev_badge("Medium") + " | Other top-20 attacking networks (DShield) |\n"
+            "| " + sev_badge("Medium") + " | Major outage in progress at a major tech provider |\n"
             "| " + sev_badge("Low") + " | CVE added 15 to 30 days ago |\n"
             "| " + sev_badge("Low") + " | Tor exit node with abuse reports, or attacking our honeypot |\n"
             "| " + sev_badge("Low") + " | Phishing page hosted on a free platform (Vercel, GitHub Pages, Netlify...) |\n\n"
@@ -1212,6 +1225,102 @@ def page_honeypot():
 
 
 # =============================================================================
+# Page: Outages
+# =============================================================================
+IMPACT_STYLE = {"critical": ("Critical", NEON_ALERT), "major": ("Major", ORANGE), "minor": ("Minor", YELLOW)}
+
+
+def duration_text(minutes):
+    if pd.isna(minutes):
+        return "—"
+    minutes = int(minutes)
+    if minutes < 60:
+        return f"{minutes} min"
+    if minutes < 48 * 60:
+        return f"{minutes // 60} h {minutes % 60} min"
+    return f"{minutes // 1440} days"
+
+
+def safe_link(url, text="Open"):
+    """Only link to real web pages: these URLs come from outside feeds."""
+    url = str(url or "")
+    if not url.startswith(("https://", "http://")):
+        return "—"
+    return f'<a href="{esc(url)}" target="_blank" rel="noopener noreferrer">{esc(text)}</a>'
+
+
+def page_outages():
+    st.title("Outages")
+    st.caption("Big, important tech outages from the last 30 days: official status pages from AWS, Azure, "
+               "Google Cloud, GitHub, Cloudflare and more, plus outage reports from BleepingComputer for services "
+               "without a public feed (like Microsoft 365). Updates every 15 minutes.")
+    outages = data["outages"]
+    if outages is None:
+        st.error("The outage sources aren't responding right now. Try again in a few minutes.")
+        return
+    failed = outages.attrs.get("failed", [])
+    if failed:
+        st.caption(f"Not responding right now: {', '.join(failed)}")
+
+    ongoing = ~outages["status"].isin(["Resolved", "Reported"])
+    big = outages["impact"].isin(["critical", "major"])
+    resolved = outages.dropna(subset=["duration_min"])
+    kpis = st.container(key="kpis")
+    cols = kpis.columns(4)
+    cols[0].metric("Happening now", f"{int((ongoing & big).sum()):,}", border=True,
+                   help="Critical or major incidents that aren't resolved yet")
+    cols[1].metric("Major incidents (30 days)", f"{int(big.sum()):,}", border=True)
+    cols[2].metric("Providers hit", f"{outages.loc[big, 'provider'].nunique():,}", border=True)
+    cols[3].metric("Typical time to fix", duration_text(resolved["duration_min"].median()) if not resolved.empty
+                   else "—", border=True, help="Median time from start to resolved, from status pages")
+
+    f1, f2, f3 = st.columns([2, 2, 1])
+    impacts = f1.pills("Impact", ["Critical", "Major", "Minor"], selection_mode="multi",
+                       default=["Critical", "Major"], help="Minor incidents are hidden by default")
+    providers = f2.multiselect("Provider", sorted(outages["provider"].unique()), placeholder="All providers")
+    only_now = f3.toggle("Happening now only")
+    shown = outages[outages["impact"].isin([i.lower() for i in impacts or []])]
+    if providers:
+        shown = shown[shown["provider"].isin(providers)]
+    if only_now:
+        shown = shown[~shown["status"].isin(["Resolved", "Reported"])]
+
+    if shown.empty:
+        st.success("No outages match these filters. Everything's quiet.")
+    else:
+        rows = []
+        for r in shown.itertuples():
+            label, color = IMPACT_STYLE.get(r.impact, ("Minor", YELLOW))
+            live = r.status not in ("Resolved", "Reported")
+            state_color = NEON_ALERT if live else NEON_GREEN if r.status == "Resolved" else NEON_GRAY
+            started = r.started.strftime("%Y-%m-%d %H:%M") if pd.notna(r.started) else "—"
+            rows.append([f"<td>{status_badge(label, color, pulse=live and r.impact != 'minor')}</td>",
+                         f"<td>{esc(r.provider)}</td>",
+                         f'<td class="clip" title="{esc(r.services)}">{esc(r.title)}</td>',
+                         f'<td class="nowrap">{status_badge(r.status, state_color, pulse=live)}</td>',
+                         f'<td class="dim">{started}</td>', f'<td class="dim">{duration_text(r.duration_min)}</td>',
+                         f'<td class="dim">{esc(r.source)}</td>', f"<td>{safe_link(r.url)}</td>"])
+        html_table(["Impact", "Provider", "Incident", "Status", "Started (UTC)", "Duration", "Source", "Details"],
+                   rows, height=620)
+        st.download_button("Export outages (CSV)", csv_safe(shown), "outages.csv", "text/csv")
+
+    big_ones = outages[big]
+    if not big_ones.empty:
+        st.subheader("Major incidents by provider")
+        st.plotly_chart(bar_chart(big_ones["provider"].value_counts().head(12), "Incidents (30 days)", 360))
+    with st.expander("How big outages get fixed"):
+        st.markdown(
+            "1. **Detect:** monitoring alerts fire and the provider opens an incident (that's what shows up here).\n"
+            "2. **Find the cause:** most big outages come from a bad change, an authentication problem, or running "
+            "out of capacity.\n"
+            "3. **Mitigate:** roll back the change, fail over to healthy servers or regions, and drain traffic away "
+            "from broken ones.\n"
+            "4. **Recover:** restart services and work through backlogs (like queued email).\n"
+            "5. **Report:** once it's resolved, the provider publishes a root-cause report (post-incident review). "
+            "Open **Details** on a resolved incident to read it when it's out.")
+
+
+# =============================================================================
 # Page: Connectors
 # =============================================================================
 def page_connectors():
@@ -1283,12 +1392,13 @@ PAGES = {
     "alerts": st.Page(page_alerts, title="Alerts", icon=":material/notifications_active:"),
     "search": st.Page(page_search, title="Search", icon=":material/terminal:"),
     "investigate": st.Page(page_investigate, title="Investigate", icon=":material/travel_explore:"),
+    "outages": st.Page(page_outages, title="Outages", icon=":material/cloud_off:"),
     "honeypot": st.Page(page_honeypot, title="Honeypot", icon=":material/hive:"),
     "connectors": st.Page(page_connectors, title="Connectors", icon=":material/cable:"),
     "privacy": st.Page(page_privacy, title="Privacy & Terms", icon=":material/policy:", url_path="privacy"),
 }
 st.navigation({
-    "Monitor": [PAGES["overview"], PAGES["alerts"]],
+    "Monitor": [PAGES["overview"], PAGES["alerts"], PAGES["outages"]],
     "Hunt": [PAGES["search"], PAGES["investigate"]],
     "Data": [PAGES["honeypot"], PAGES["connectors"]],
     "About": [PAGES["privacy"]],

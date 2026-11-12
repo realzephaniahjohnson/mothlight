@@ -15,7 +15,7 @@
 <img src="https://img.shields.io/badge/Tailscale-admin_only-3D7CF0?style=flat-square&logo=tailscale&logoColor=white&labelColor=0B1633" alt="Tailscale">
 
 <img src="https://img.shields.io/badge/threat_feeds-19-4D9FFF?style=flat-square&labelColor=0B1633" alt="19 feeds">
-<img src="https://img.shields.io/badge/detection_rules-24-4D9FFF?style=flat-square&labelColor=0B1633" alt="24 rules">
+<img src="https://img.shields.io/badge/detection_rules-26-4D9FFF?style=flat-square&labelColor=0B1633" alt="26 rules">
 <img src="https://img.shields.io/badge/hunt_with-KQL_·_SPL_·_SQL-4D9FFF?style=flat-square&labelColor=0B1633" alt="KQL SPL SQL">
 <img src="https://img.shields.io/badge/API_keys_needed-none-4D9FFF?style=flat-square&labelColor=0B1633" alt="No keys needed">
 
@@ -26,7 +26,7 @@
 ---
 
 **Mothlight** is an OSINT threat intelligence SIEM with its own live SSH honeypot. It pulls 19 free threat feeds into one
-place, raises alerts from 24 detection rules, maps everything on a 3D threat globe, and lets you hunt with **KQL**,
+place, raises alerts from 26 detection rules, maps everything on a 3D threat globe, and lets you hunt with **KQL**,
 **SPL**, or **SQL**. Drop in any IP, CVE, email, phone number, or domain and it returns a verdict with the evidence.
 
 <p align="center"><img src="assets/globe.jpg" alt="Mothlight overview: live KPIs and the 3D threat globe with honeypot attack arcs" width="100%"></p>
@@ -36,9 +36,10 @@ place, raises alerts from 24 detection rules, maps everything on a 3D threat glo
 | | Page | What it does |
 |:-:|---|---|
 | 🌍 | **Overview** | KPIs and a 3D night-side threat globe: countries glow by how many malicious IPs they host, with malicious IPs by attack type, ransomware victims, US scam calls, pulsing alert rings, and live honeypot attack arcs |
-| 🚨 | **Alerts** | Detections from 24 rules across 4 severities, filterable by severity and source |
+| 🚨 | **Alerts** | Detections from 26 rules across 4 severities, filterable by severity and source |
 | 🔎 | **Search** | Hunt in KQL (Microsoft Sentinel), SPL (Splunk), or SQL, with the translated SQL shown, an event timeline, a schema browser, and CSV export |
 | 🕵️ | **Investigate** | One box for any indicator: auto-detects IPs, CVEs, emails, phone numbers, and domains, then returns a verdict, risk score, and evidence |
+| ☁️ | **Outages** | Big tech outages from the last 30 days (AWS, Azure, Google Cloud, GitHub, Cloudflare, Microsoft 365 and more): what's down right now, impact, duration, and links to each incident and its root-cause report |
 | 🍯 | **Honeypot** | Real SSH attacks on our Cowrie honeypot, updated every 5 minutes: attackers on a map, attacks per hour, and the usernames, passwords, and commands they tried |
 | 🔌 | **Connectors** | Health, record counts, and refresh status for every data source |
 
@@ -97,11 +98,13 @@ flowchart LR
 | 🟠 **High** | Phishing site impersonating a bank, crypto exchange, PayPal, or the IRS |
 | 🟠 **High** | Scam number with a large spike in FTC reports |
 | 🟠 **High** | IP on 5+ blocklists attacked the honeypot |
+| 🟠 **High** | Critical outage in progress at a major tech provider |
 | 🟡 **Medium** | Any other CVE added in the last 14 days |
 | 🟡 **Medium** | Attacker seen doing 3+ kinds of attacks |
 | 🟡 **Medium** | Phishing site impersonating any other major brand (lookalike detection) |
 | 🟡 **Medium** | Mass-reported scam number |
 | 🟡 **Medium** | 100+ attempts from one IP against the honeypot |
+| 🟡 **Medium** | Major outage in progress at a major tech provider |
 | ⚪ **Low** | CVE added 15 to 30 days ago |
 | ⚪ **Low** | Tor exit node with abuse reports, or attacking the honeypot |
 | ⚪ **Low** | Phishing page hosted on a free platform (Vercel, GitHub Pages, Netlify...) |
@@ -109,7 +112,7 @@ flowchart LR
 ## 📡 Data sources
 
 <details>
-<summary><b>19 feeds and 6 enrichment services</b> (click to expand)</summary>
+<summary><b>20 feeds and 6 enrichment services</b> (click to expand)</summary>
 
 <br>
 
@@ -134,6 +137,7 @@ flowchart LR
 | All IP feeds combined | `ip_intel` | One row per IP: attack type, every feed it's in, blocklist score, risk score | — |
 | [OpenPhish Community](https://github.com/openphish/public_feed) | `phishing_urls` | Live phishing URLs (non-commercial use) | No |
 | [FTC Do Not Call data](https://www.ftc.gov/policy-notices/open-government/data-sets/do-not-call-data) | `scam_calls` | Phone numbers reported for unwanted calls (daily CSVs, or the official FTC API as a fallback) | Optional (api.data.gov) |
+| Status pages ([AWS](https://health.aws.amazon.com/health/status), [Azure](https://azure.status.microsoft/), [Google Cloud](https://status.cloud.google.com/), GitHub, Cloudflare, Atlassian, Zoom, Discord, OpenAI, Anthropic, Dropbox, Reddit, DigitalOcean, Twilio) + [BleepingComputer](https://www.bleepingcomputer.com/) | `outages` | Major tech outages from the last 30 days: provider, impact, status, start, and duration | No |
 | [disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains) | `disposable_domains` | Throwaway email providers | No |
 | [Our Cowrie honeypot](https://github.com/realzephaniahjohnson/mothlight-honeypot-data) | `honeypot` | Live SSH attacks: login attempts, commands, and malware downloads (updated every 5 minutes) | No |
 | ip-api.com, Shodan InternetDB, Google DNS, RDAP | — | Enrichment in Investigate | No |

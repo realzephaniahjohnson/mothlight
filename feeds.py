@@ -653,3 +653,179 @@ def load_honeypot(file=None):
     # Keep only valid public IPs
     out = out[out["ip"].apply(lambda x: detect_type(x) == "ip")]
     return out.reset_index(drop=True)
+
+
+# ---------------------------------------------------------------------------
+# Major tech outages (official status pages + outage news)
+# ---------------------------------------------------------------------------
+# Most big providers run their status page on Atlassian Statuspage, which has the same free JSON API everywhere
+STATUSPAGE_PROVIDERS = {
+    "GitHub": "https://www.githubstatus.com",
+    "Cloudflare": "https://www.cloudflarestatus.com",
+    "Atlassian": "https://status.atlassian.com",
+    "Zoom": "https://status.zoom.us",
+    "Discord": "https://discordstatus.com",
+    "OpenAI": "https://status.openai.com",
+    "Anthropic (Claude)": "https://status.claude.com",
+    "Dropbox": "https://status.dropbox.com",
+    "Reddit": "https://www.redditstatus.com",
+    "DigitalOcean": "https://status.digitalocean.com",
+    "Twilio": "https://status.twilio.com",
+}
+GCP_STATUS_URL = "https://status.cloud.google.com/incidents.json"
+AWS_STATUS_URL = "https://status.aws.amazon.com/rss/all.rss"
+AZURE_STATUS_URL = "https://azure.status.microsoft/en-us/status/feed/"
+OUTAGE_NEWS_URL = "https://www.bleepingcomputer.com/feed/"
+OUTAGE_DAYS = 30  # how far back to keep incidents
+OUTAGE_COLUMNS = ["provider", "title", "impact", "status", "started", "resolved", "duration_min", "services",
+                  "source", "url"]
+# Headlines that are about a service going down (not "takes down a botnet")
+OUTAGE_WORDS = re.compile(r"\b(outages?|downtime|disrupt\w*|(is|are|went|goes|was) down|down worldwide|"
+                          r"service (issues?|incident))\b", re.I)
+# Big names to label news stories with
+NEWS_PROVIDERS = {
+    "Microsoft": ("microsoft", "exchange", "outlook", "teams", "azure", "365", "onedrive", "sharepoint", "entra"),
+    "Google": ("google", "gmail", "youtube", "gcp"), "AWS": ("aws", "amazon web services"),
+    "Cloudflare": ("cloudflare",), "CrowdStrike": ("crowdstrike",), "Apple": ("apple", "icloud"),
+    "Meta": ("meta", "facebook", "instagram", "whatsapp"), "X": ("twitter",), "Slack": ("slack",),
+    "GitHub": ("github",), "Zoom": ("zoom",), "OpenAI": ("openai", "chatgpt"), "Anthropic (Claude)": ("claude",),
+}
+
+
+def _news_provider(title):
+    words = title.lower()
+    for name, keys in NEWS_PROVIDERS.items():
+        if any(re.search(rf"\b{re.escape(k)}\b", words) for k in keys):
+            return name
+    return "Other"
+
+
+def _rss_items(url):
+    """Download an RSS feed and return its <item> entries as dicts."""
+    import xml.etree.ElementTree as ET
+    response = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+    response.raise_for_status()
+    root = ET.fromstring(response.content)
+    return [{child.tag: (child.text or "").strip() for child in item} for item in root.iter("item")]
+
+
+def _statuspage_outages(provider, base):
+    response = requests.get(f"{base}/api/v2/incidents.json", headers=HEADERS, timeout=TIMEOUT)
+    response.raise_for_status()
+    rows = []
+    for i in response.json().get("incidents", []):
+        resolved = i.get("status") in ("resolved", "postmortem")
+        rows.append({
+            "provider": provider, "title": i.get("name", ""), "impact": i.get("impact") or "none",
+            "status": "Resolved" if resolved else (i.get("status") or "ongoing").title(),
+            "started": i.get("started_at") or i.get("created_at"),
+            "resolved": i.get("resolved_at") if resolved else None,
+            "services": ", ".join(c.get("name", "") for c in i.get("components") or []),
+            "source": "Status page", "url": i.get("shortlink") or base,
+        })
+    return rows
+
+
+def _gcp_outages():
+    response = requests.get(GCP_STATUS_URL, headers=HEADERS, timeout=TIMEOUT)
+    response.raise_for_status()
+    rows = []
+    for i in response.json():
+        if i.get("status_impact") == "SERVICE_OUTAGE":
+            impact = "critical"
+        else:
+            impact = {"high": "major", "medium": "minor", "low": "minor"}.get(i.get("severity"), "minor")
+        products = i.get("affected_products") or []
+        rows.append({
+            "provider": "Google Cloud", "title": i.get("external_desc", "").strip(), "impact": impact,
+            "status": "Resolved" if i.get("end") else "Ongoing", "started": i.get("begin"), "resolved": i.get("end"),
+            "services": ", ".join(p.get("title", "") for p in products) or i.get("service_name", ""),
+            "source": "Status page", "url": "https://status.cloud.google.com/" + i.get("uri", ""),
+        })
+    return rows
+
+
+def _aws_outages():
+    """AWS's status RSS: one item per update. Keep the newest update of each incident."""
+    rows, seen = [], set()
+    for item in _rss_items(AWS_STATUS_URL):
+        guid = item.get("guid", "")
+        if guid in seen:
+            continue
+        seen.add(guid)
+        title = item.get("title", "")
+        done = "RESOLVED" in title.upper() or title.lower().startswith("service is operating normally")
+        clean = re.sub(r"^[^:]*:\s*(\[RESOLVED\]\s*)?", "", title, flags=re.I) or title
+        big = re.search(r"disruption|outage|unavailable|impaired", title, re.I)
+        service = guid.split("#")[-1].split("_")[0] if "#" in guid else ""
+        rows.append({
+            "provider": "AWS", "title": clean, "impact": "major" if big else "minor",
+            "status": "Resolved" if done else "Ongoing", "started": item.get("pubDate"),
+            "resolved": None, "services": service,  # the feed only has the latest update time, not the start
+            "source": "Status page", "url": "https://health.aws.amazon.com/health/status",
+        })
+    return rows
+
+
+def _azure_outages():
+    """Azure only posts here during widespread incidents, so anything listed counts as major."""
+    return [{"provider": "Microsoft Azure", "title": item.get("title", ""), "impact": "major", "status": "Ongoing",
+             "started": item.get("pubDate"), "resolved": None, "services": "",
+             "source": "Status page", "url": item.get("link") or "https://azure.status.microsoft/en-us/status/"}
+            for item in _rss_items(AZURE_STATUS_URL)]
+
+
+def _news_outages():
+    """Outage stories from BleepingComputer. Covers providers without a public feed (like Microsoft 365)."""
+    rows = []
+    for item in _rss_items(OUTAGE_NEWS_URL):
+        title = item.get("title", "")
+        if not OUTAGE_WORDS.search(title):
+            continue
+        rows.append({"provider": _news_provider(title), "title": title, "impact": "major", "status": "Reported",
+                     "started": item.get("pubDate"), "resolved": None, "services": "",
+                     "source": "BleepingComputer", "url": item.get("link", "")})
+    return rows
+
+
+def _to_utc(series):
+    """Parse timestamps in any format (ISO or RSS dates) into plain UTC."""
+    return pd.to_datetime(series.map(lambda v: _parse_when(v)), errors="coerce", utc=True).dt.tz_localize(None)
+
+
+def _parse_when(value):
+    if value is None or (isinstance(value, float) and pd.isna(value)) or value == "":
+        return None
+    try:
+        return pd.Timestamp(value)
+    except (ValueError, TypeError):
+        from email.utils import parsedate_to_datetime
+        try:
+            return pd.Timestamp(parsedate_to_datetime(value))
+        except (ValueError, TypeError):
+            return None
+
+
+@st.cache_data(ttl=900, show_spinner="Loading tech outages...")
+def get_outages():
+    """Major tech outages from the last 30 days. One broken status page doesn't stop the rest."""
+    sources = [(name, (lambda n=name, b=base: _statuspage_outages(n, b))) for name, base in STATUSPAGE_PROVIDERS.items()]
+    sources += [("Google Cloud", _gcp_outages), ("AWS", _aws_outages), ("Microsoft Azure", _azure_outages),
+                ("BleepingComputer", _news_outages)]
+    rows, failed = [], []
+    for name, loader in sources:
+        try:
+            rows += loader()
+        except Exception:
+            failed.append(name)
+    if failed and len(failed) == len(sources):
+        raise ConnectionError("No outage sources are responding right now.")
+    df = pd.DataFrame(rows, columns=[c for c in OUTAGE_COLUMNS if c != "duration_min"])
+    df["started"], df["resolved"] = _to_utc(df["started"]), _to_utc(df["resolved"])
+    df = df[df["started"] >= pd.Timestamp.now(tz="UTC").tz_localize(None) - pd.Timedelta(days=OUTAGE_DAYS)]
+    df = df[df["impact"] != "none"]
+    df["duration_min"] = ((df["resolved"] - df["started"]).dt.total_seconds() // 60).astype("Int64")
+    df.loc[df["duration_min"] < 0, "duration_min"] = pd.NA
+    df = df[OUTAGE_COLUMNS].sort_values("started", ascending=False).reset_index(drop=True)
+    df.attrs["failed"] = failed  # shown on the Outages page
+    return df
