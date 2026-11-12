@@ -676,15 +676,20 @@ GCP_STATUS_URL = "https://status.cloud.google.com/incidents.json"
 AWS_STATUS_URL = "https://status.aws.amazon.com/rss/all.rss"
 AZURE_STATUS_URL = "https://azure.status.microsoft/en-us/status/feed/"
 OUTAGE_NEWS_URL = "https://www.bleepingcomputer.com/feed/"
+# Google News search: catches outages the moment any outlet covers them (BleepingComputer can lag by hours)
+GOOGLE_NEWS_URL = "https://news.google.com/rss/search"
+GOOGLE_NEWS_QUERY = ('(outage OR "is down" OR "goes down" OR "went down") '
+                     '(Microsoft OR Outlook OR "Microsoft 365" OR Teams OR Azure OR AWS OR Google OR Gmail OR '
+                     'Cloudflare OR GitHub OR Slack OR Zoom OR CrowdStrike OR iCloud OR ChatGPT OR Claude) when:3d')
 OUTAGE_DAYS = 30  # how far back to keep incidents
 OUTAGE_COLUMNS = ["provider", "title", "impact", "status", "started", "resolved", "duration_min", "services",
                   "source", "url"]
 # Headlines that are about a service going down (not "takes down a botnet")
-OUTAGE_WORDS = re.compile(r"\b(outages?|downtime|disrupt\w*|(is|are|went|goes|was) down|down worldwide|"
-                          r"service (issues?|incident))\b", re.I)
+OUTAGE_WORDS = re.compile(r"\b(outages?|downtime|disrupt\w*|down worldwide|"
+                          r"(go|goes|went|is|are|was|were) down|service (issues?|incident))\b|\bdown\?", re.I)
 # Big names to label news stories with
 NEWS_PROVIDERS = {
-    "Microsoft": ("microsoft", "exchange", "outlook", "teams", "azure", "365", "onedrive", "sharepoint", "entra"),
+    "Microsoft": ("microsoft", "exchange", "outlook", "microsoft teams", "azure", "365", "onedrive", "sharepoint", "entra"),
     "Google": ("google", "gmail", "youtube", "gcp"), "AWS": ("aws", "amazon web services"),
     "Cloudflare": ("cloudflare",), "CrowdStrike": ("crowdstrike",), "Apple": ("apple", "icloud"),
     "Meta": ("meta", "facebook", "instagram", "whatsapp"), "X": ("twitter",), "Slack": ("slack",),
@@ -700,10 +705,10 @@ def _news_provider(title):
     return "Other"
 
 
-def _rss_items(url):
+def _rss_items(url, params=None):
     """Download an RSS feed and return its <item> entries as dicts."""
     import xml.etree.ElementTree as ET
-    response = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+    response = requests.get(url, params=params, headers=HEADERS, timeout=TIMEOUT)
     response.raise_for_status()
     root = ET.fromstring(response.content)
     return [{child.tag: (child.text or "").strip() for child in item} for item in root.iter("item")]
@@ -775,17 +780,49 @@ def _azure_outages():
             for item in _rss_items(AZURE_STATUS_URL)]
 
 
-def _news_outages():
-    """Outage stories from BleepingComputer. Covers providers without a public feed (like Microsoft 365)."""
+def _news_rows(items, source):
     rows = []
-    for item in _rss_items(OUTAGE_NEWS_URL):
+    for item in items:
         title = item.get("title", "")
         if not OUTAGE_WORDS.search(title):
             continue
         rows.append({"provider": _news_provider(title), "title": title, "impact": "major", "status": "Reported",
                      "started": item.get("pubDate"), "resolved": None, "services": "",
-                     "source": "BleepingComputer", "url": item.get("link", "")})
+                     "source": source, "url": item.get("link", "")})
     return rows
+
+
+def _news_outages():
+    """Outage stories from BleepingComputer. Covers providers without a public feed (like Microsoft 365)."""
+    return _news_rows(_rss_items(OUTAGE_NEWS_URL), "BleepingComputer")
+
+
+def _google_news_outages():
+    """Outage headlines from any outlet via Google News. Titles end in ' - Outlet name'."""
+    items = _rss_items(GOOGLE_NEWS_URL, {"q": GOOGLE_NEWS_QUERY, "hl": "en-US", "gl": "US", "ceid": "US:en"})
+    for item in items:
+        item["title"] = re.sub(r"\s+-\s+[^-]+$", "", item.get("title", ""))
+    return _news_rows(items, "News")
+
+
+def _merge_news(df):
+    """Many outlets cover the same outage: keep one row per provider per day, with the first headline."""
+    news = df["source"].isin(["BleepingComputer", "News"]) & (df["provider"] != "Other")
+    if not news.any():
+        return df
+    stories = df[news].sort_values("started").copy()
+    stories["day"] = stories["started"].dt.date
+    merged = stories.groupby(["provider", "day"], as_index=False).agg(
+        title=("title", "first"), impact=("impact", "first"), status=("status", "first"),
+        started=("started", "first"), resolved=("resolved", "first"), url=("url", "first"),
+        reports=("title", "size"), latest=("started", "last"),
+        outlets=("source", lambda s: ", ".join(sorted(set(s)))))
+    # Still being reported in the last 6 hours? Treat it as happening now
+    recent = merged["latest"] >= pd.Timestamp.now(tz="UTC").tz_localize(None) - pd.Timedelta(hours=6)
+    merged["status"] = recent.map({True: "Developing", False: "Reported"})
+    merged["services"] = merged["reports"].map(lambda n: f"{n} news report{'s' if n != 1 else ''}")
+    merged["source"] = merged["outlets"]
+    return pd.concat([df[~news], merged[df.columns]], ignore_index=True)
 
 
 def _to_utc(series):
@@ -811,7 +848,7 @@ def get_outages():
     """Major tech outages from the last 30 days. One broken status page doesn't stop the rest."""
     sources = [(name, (lambda n=name, b=base: _statuspage_outages(n, b))) for name, base in STATUSPAGE_PROVIDERS.items()]
     sources += [("Google Cloud", _gcp_outages), ("AWS", _aws_outages), ("Microsoft Azure", _azure_outages),
-                ("BleepingComputer", _news_outages)]
+                ("BleepingComputer", _news_outages), ("Google News", _google_news_outages)]
     rows, failed = [], []
     for name, loader in sources:
         try:
@@ -822,6 +859,7 @@ def get_outages():
         raise ConnectionError("No outage sources are responding right now.")
     df = pd.DataFrame(rows, columns=[c for c in OUTAGE_COLUMNS if c != "duration_min"])
     df["started"], df["resolved"] = _to_utc(df["started"]), _to_utc(df["resolved"])
+    df = _merge_news(df.dropna(subset=["started"]))
     df = df[df["started"] >= pd.Timestamp.now(tz="UTC").tz_localize(None) - pd.Timedelta(days=OUTAGE_DAYS)]
     df = df[df["impact"] != "none"]
     df["duration_min"] = ((df["resolved"] - df["started"]).dt.total_seconds() // 60).astype("Int64")

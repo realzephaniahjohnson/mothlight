@@ -287,7 +287,7 @@ CONNECTORS = [
      "https://haveibeenpwned.com/PwnedWebsites"),
     ("scam_calls", "FTC Do Not Call", "Scam and robocall reports", feeds.get_ftc_complaints, "6 hours",
      "https://www.ftc.gov/policy-notices/open-government/data-sets/do-not-call-data"),
-    ("outages", "Status pages + BleepingComputer", "Major tech outages (AWS, Azure, Google Cloud, GitHub...)",
+    ("outages", "Status pages + outage news", "Major tech outages (AWS, Azure, Google Cloud, GitHub...)",
      feeds.get_outages, "15 minutes", "https://www.githubstatus.com/api"),
     ("disposable_domains", "Disposable email domains", "Throwaway email providers", feeds.get_disposable_domains,
      "24 hours", feeds.DISPOSABLE_URL),
@@ -1252,8 +1252,9 @@ def safe_link(url, text="Open"):
 def page_outages():
     st.title("Outages")
     st.caption("Big, important tech outages from the last 30 days: official status pages from AWS, Azure, "
-               "Google Cloud, GitHub, Cloudflare and more, plus outage reports from BleepingComputer for services "
-               "without a public feed (like Microsoft 365). Updates every 15 minutes.")
+               "Google Cloud, GitHub, Cloudflare and more, plus news coverage (Google News and BleepingComputer) for "
+               "services without a public feed, like Microsoft 365. Stories still being reported in the last 6 hours "
+               "show as Developing. Updates every 15 minutes.")
     outages = data["outages"]
     if outages is None:
         st.error("The outage sources aren't responding right now. Try again in a few minutes.")
